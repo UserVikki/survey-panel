@@ -28,6 +28,7 @@ public class AdminInitializer {
                         .complete("")
                         .terminate("")
                         .quotafull("")
+                        .securityTerminate("")
                         .build();
                 userRepository.save(admin);
                 System.out.println("✅ Admin user created: Username -> admin, Password -> admin123");

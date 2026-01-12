@@ -4,5 +4,6 @@ public enum SurveyStatus {
     COMPLETE,
     TERMINATE,
     QUOTAFULL,
+    SECURITYTERMINATE,
     IN_PROGRESS
 }

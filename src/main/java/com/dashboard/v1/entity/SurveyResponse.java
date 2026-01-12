@@ -30,6 +30,5 @@ public class SurveyResponse {
     private String uId;
 
     private String vendorUsername;
+
 }
-
-

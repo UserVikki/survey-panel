@@ -11,5 +11,6 @@ public class GetVendorResponse {
     private String complete;
     private String terminate;
     private String quotafull;
+    private String securityTerminate;
     private List<CountryLink> links;
 }

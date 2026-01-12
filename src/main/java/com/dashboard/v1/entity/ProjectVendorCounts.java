@@ -25,6 +25,8 @@ public class ProjectVendorCounts {
 
     private Integer quotaFullSurveys;
 
+    private Integer securityTerminateSurveys;
+
 }
 
 

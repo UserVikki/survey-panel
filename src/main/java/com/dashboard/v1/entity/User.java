@@ -1,5 +1,6 @@
 package com.dashboard.v1.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 
 import javax.persistence.*;
@@ -21,6 +22,7 @@ public class User {
     @Column(unique = true, nullable = false)
     private String username;
 
+    @JsonIgnore  // Don't serialize password in JSON responses
     @Column(nullable = false)
     private String password;  // Hashed password
 
@@ -41,6 +43,9 @@ public class User {
 
     @Column(nullable = false)
     private String quotafull;
+
+    @Column(nullable = false)
+    private String securityTerminate;
 
     @Column(nullable = false, unique = true)
     private String userToken;  // will be attached to link given to a vendor

@@ -10,4 +10,5 @@ public class VendorRequest {
     private String complete;
     private String terminate;
     private String quotafull;
+    private String securityTerminate;
 }

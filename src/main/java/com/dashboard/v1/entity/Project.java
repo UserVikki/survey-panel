@@ -1,7 +1,7 @@
 package com.dashboard.v1.entity;
 
-import lombok.Getter;
-import lombok.Setter;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import lombok.*;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
@@ -10,6 +10,8 @@ import java.util.List;
 @Entity
 @Getter
 @Setter
+@ToString(exclude = "client")   // 🔥 IMPORTANT
+@EqualsAndHashCode(exclude = "client")
 public class Project {
 
     @Id
@@ -20,12 +22,14 @@ public class Project {
     private String projectIdentifier;
 
     @Enumerated(EnumType.STRING)
-    private ProjectStatus status; // ACTIVE or INACTIVE
-    private String quota;
-    private String loi;
-    private String ir;
-    private String counts;
-    private String client;
+    private ProjectStatus status = ProjectStatus.ACTIVE; // ACTIVE or INACTIVE
+
+    private Long counts = 0L;
+
+    @ManyToOne(fetch = FetchType.LAZY)  // Use LAZY to prevent circular loading
+    @JoinColumn(name = "client_id")
+    @JsonIgnoreProperties("projects")  // Break the infinite recursion
+    private Client client;
 
     @ElementCollection
     @CollectionTable(name = "project_country_links", joinColumns = @JoinColumn(name = "project_id"))

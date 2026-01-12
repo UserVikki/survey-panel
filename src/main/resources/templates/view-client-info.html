@@ -302,6 +302,7 @@
                                 <th>Completed</th>
                                 <th>Terminated</th>
                                 <th>Quota</th>
+                                <th>SecurityTerminate</th>
                             </tr>
                             </thead>
                             <tbody>
@@ -392,132 +393,8 @@
 <!-- pace js -->
 <script src="/assets/libs/pace-js/pace.min.js"></script>
 
-<script>
-    var allText = /*[[${'All'}]]*/ 'All';
-</script>
-
-
-
-<!-- JavaScript to Handle Modal Data -->
-<script>
-    document.querySelectorAll('.view-links').forEach(button => {
-        button.addEventListener('click', function () {
-            let row = this.closest('tr');
-            let link = row.getAttribute('data-links');
-            let countries = JSON.parse(row.getAttribute('data-countries'));
-
-            document.getElementById('originalLink').href = link;
-            document.getElementById('originalLink').textContent = link;
-
-            let countryList = document.getElementById('countryList');
-            countryList.innerHTML = '';
-
-            countries.forEach(country => {
-                let li = document.createElement('li');
-                li.innerHTML = `${country.flag} ${country.name} (${country.count})`;
-                countryList.appendChild(li);
-            });
-        });
-    });
-</script>
-<script>
-    const token = localStorage.getItem("jwtToken");
-
-    if (!token) {
-        window.location.href = "/login";  // Redirect if not logged in
-    } else {
-        document.addEventListener("DOMContentLoaded", function () {
-            const usernameInput = document.getElementById("username");
-
-            if (usernameInput) {
-                fetchClientProjects(usernameInput.value);
-            }
-        });
-
-        function fetchClientProjects(username) {
-            fetch(`/admin/get/client/projects?userName=${username}`, {
-                method: "GET",
-                headers: {
-                    "Authorization": "Bearer " + token,
-                    "Content-Type": "application/json"
-                }
-            })
-            .then(response => {
-                if (response.status === 401) {
-                    alert("Session expired. Please log in again.");
-                    localStorage.removeItem('jwtToken');
-                    window.location.href = "/login";
-                    return;
-                }
-                return response.json();
-            })
-            .then(data => {
-                populateTable(data);
-            })
-            .catch(error => console.error("Error fetching client projects:", error));
-        }
-
-        function populateTable(projects) {
-            let table = $("#example").DataTable();
-
-            // ✅ Clear and Destroy DataTable before populating
-            table.clear().destroy();
-
-            let tableBody = document.querySelector("#example tbody");
-            tableBody.innerHTML = ""; // Clear existing rows
-
-            let totalComplete = 0;
-            let totalTerminate = 0;
-            let totalQuotafull = 0;
-
-            projects.forEach(project => {
-                totalComplete += project.complete || 0;
-                totalTerminate += project.terminate || 0;
-                totalQuotafull += project.quotafull || 0;
-
-                let row = `
-                    <tr>
-                        <td>${project.projectId}</td>
-                        <td><span class="badge bg-success">${project.complete || 0}</span></td>
-                        <td><span class="badge bg-danger">${project.terminate || 0}</span></td>
-                        <td><span class="badge bg-primary">${project.quotafull || 0}</span></td>
-                    </tr>`;
-
-                tableBody.insertAdjacentHTML("beforeend", row);
-            });
-
-            if (document.getElementById("completed")) {
-                document.getElementById("completed").value = totalComplete;
-            }
-            if (document.getElementById("terminated")) {
-                document.getElementById("terminated").value = totalTerminate;
-            }
-            if (document.getElementById("quota")) {
-                document.getElementById("quota").value = totalQuotafull;
-            }
-
-            // ✅ Reinitialize DataTable after adding new rows
-            initializeDataTable();
-        }
-
-        function initializeDataTable() {
-            $("#example").DataTable({
-                responsive: true,
-                lengthMenu: [
-                    [10, 20, 50, 100, -1],
-                    [10, 20, 50, 100, "All"]
-                ],
-                pageLength: 10,
-                dom: 'lBfrtip',
-                buttons: ['copy', 'csv', 'excel', 'pdf', 'print'],
-                language: {
-                    search: "Search Table:",
-                    lengthMenu: "Show _MENU_ entries",
-                }
-            });
-        }
-    }
-</script>
+<!-- Page-specific JS -->
+<script src="/assets/js/pages/view-client-info.js"></script>
 
 
 </body>

@@ -53,9 +53,14 @@ public class SurveyResponseController {
         return saveSurveyResponse(UID, SurveyStatus.QUOTAFULL);
     }
 
+    @GetMapping("/securityTerminate")
+    public ResponseEntity<?> submitSecurityTerminate(@RequestParam String UID) {
+        logger.info("inside SurveyResponseController /survey/securityTerminate UID : {}", UID);
+        return saveSurveyResponse(UID, SurveyStatus.SECURITYTERMINATE);
+    }
+
     private ResponseEntity<?> saveSurveyResponse(String UID, SurveyStatus status) {
         // Validate the project exists.
-
 
         Optional<SurveyResponse> surveyResponse = surveyResponseRepository.findByUId(UID);
 
@@ -64,24 +69,20 @@ public class SurveyResponseController {
         }
         SurveyResponse res = surveyResponse.get();
 
-
-
         Project project = projectRepository.findByProjectIdentifier(surveyResponse.get().getProjectId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Project not found"));
 
         Optional<User> vendor = userRepository.findByUsername(res.getVendorUsername());
 
-
-
-        if(!(surveyResponse.get().getStatus() == SurveyStatus.IN_PROGRESS)) return ResponseEntity.ok("THIS UID is already registered for a response ");;
+        if(!(surveyResponse.get().getStatus() == SurveyStatus.IN_PROGRESS)) return ResponseEntity.ok("THIS UID is already registered for a response ");
 
         res.setStatus(status);
 
         surveyResponseRepository.save(res);
 
         if(status == SurveyStatus.COMPLETE){
-            int currentCount = project.getCounts() != null ? Integer.parseInt(project.getCounts()) : 0;
-            project.setCounts(String.valueOf(currentCount + 1));
+            Long currentCount = project.getCounts();
+            project.setCounts(currentCount + 1);
             projectRepository.save(project);
         }
 
@@ -103,6 +104,8 @@ public class SurveyResponseController {
                 return vendor.getTerminate();
             case QUOTAFULL:
                 return vendor.getQuotafull();
+            case SECURITYTERMINATE:
+                return vendor.getSecurityTerminate();
             default:
                 return null;
         }
@@ -117,17 +120,9 @@ public class SurveyResponseController {
                     .body("No Vendor Redirects configured for status: " + status);
         }
 
-        // ✅ Case 1: Replace [UID] if it exists
-        if (vendorApiUrl.contains("[UID]")) {
-            vendorApiUrl = vendorApiUrl.replace("[UID]", UID);
-        } else {
-            // ✅ Case 2: Trim after last '=' and append UID
-            int lastEqualIndex = vendorApiUrl.lastIndexOf('=');
-            if (lastEqualIndex != -1) {
-                vendorApiUrl = vendorApiUrl.substring(0, lastEqualIndex);
-            }
-            vendorApiUrl += "=" + UID;
-        }
+        vendorApiUrl = vendorApiUrl.replace("[AMI]", UID);
+
+         logger.info("Notifying vendor at URL: {}", vendorApiUrl);
 
         try {
             SslUtil.disableSslVerification();

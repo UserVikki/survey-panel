@@ -31,14 +31,7 @@
     <!-- Responsive datatable examples -->
     <link href="/assets/libs/datatables.net-responsive-bs4/css/responsive.bootstrap4.min.css" rel="stylesheet"
         type="text/css" />
-    <script>
-        (function() {
-            const token = localStorage.getItem("jwtToken");
-            if (!token) {
-                window.location.replace("/login"); // faster redirect than href
-            }
-        })();
-    </script>
+    <script src="/assets/js/auth-check.js"></script>
 </head>
 
 <body>
@@ -378,110 +371,9 @@
         var allText = /*[[${'All'}]]*/ 'All';
     </script>
 
-    <!-- DataTables Initialization -->
-    <script>
-        $(document).ready(function () {
-            $('#example').DataTable({
-                responsive: true, // Enables responsive behavior
-                lengthMenu: [
-                    [10, 20, 50, 100, -1], // Values for dropdown options
-                    [10, 20, 50, 100, "ALL"] // Labels for the dropdown
-                ],
-                pageLength: 10, // Default rows per page
-                dom: 'lBfrtip', // Enables buttons like export
-                buttons: [
-                    'copy', 'csv', 'excel', 'pdf', 'print'
-                ],
-                language: {
-                    search: "Search Table:", // Customize search input placeholder
-                    lengthMenu: "Show _MENU_ entries", // Customize length menu text
-                }
-            });
-        });
-    </script>
-
-
-    <!-- JavaScript to Handle Modal Data -->
-    <script>
-        document.querySelectorAll('.view-links').forEach(button => {
-            button.addEventListener('click', function () {
-                let row = this.closest('tr');
-                let link = row.getAttribute('data-links');
-                let countries = JSON.parse(row.getAttribute('data-countries'));
-
-                document.getElementById('originalLink').href = link;
-                document.getElementById('originalLink').textContent = link;
-
-                let countryList = document.getElementById('countryList');
-                countryList.innerHTML = '';
-
-                countries.forEach(country => {
-                    let li = document.createElement('li');
-                    li.innerHTML = `${country.flag} ${country.name} (${country.count})`;
-                    countryList.appendChild(li);
-                });
-            });
-        });
-    </script>
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            fetchSurveyResponses();
-        });
-
-        function fetchSurveyResponses() {
-            fetch("/survey/api/survey-responses/all")
-                .then(response => {
-                    if (response.status === 401) {
-                        alert("Session expired. Please log in again.");
-                        localStorage.removeItem('jwtToken');
-                        window.location.href = "/login";
-                        return;
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    populateTable(data);
-                })
-                .catch(error => console.error("Error fetching survey responses:", error));
-        }
-
-        function populateTable(surveyResponses) {
-            const table = $('#example').DataTable();
-            table.clear(); // Clears the existing table data
-
-            surveyResponses.forEach(response => {
-                const row = [
-                    response.projectId,
-                    response.uid,
-                    `<span class="badge ${getStatusClass(response.status)}">${response.status}</span>`,
-                    formatDate(response.timeStart),
-                    response.ipAddress
-                ];
-                table.row.add(row); // Adds the new row to DataTable
-            });
-
-            table.draw(); // Redraws the table to reflect the changes
-        }
-
-        function getStatusClass(status) {
-            switch (status.toLowerCase()) {
-                case "complete":
-                    return "bg-success"; // Green
-                case "terminate":
-                    return "bg-danger"; // Red
-                case "quotafull":
-                    return "bg-warning"; // Yellow
-                default:
-                    return "bg-secondary"; // Gray
-            }
-        }
-
-        function formatDate(isoDate) {
-            if (!isoDate) return "N/A";
-            const date = new Date(isoDate);
-            return date.toLocaleString(); // Converts to local date-time format
-        }
-    </script>
+    <!-- Dashboard page JavaScript -->
+    <script src="/assets/js/common-datatable.js"></script>
+    <script src="/assets/js/pages/dashboard.js"></script>
 
 </body>
 

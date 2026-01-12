@@ -30,14 +30,7 @@
     <!-- Responsive datatable examples -->
     <link href="/assets/libs/datatables.net-responsive-bs4/css/responsive.bootstrap4.min.css" rel="stylesheet"
           type="text/css" />
-    <script>
-        (function() {
-            const token = localStorage.getItem("jwtToken");
-            if (!token) {
-                window.location.replace("/login"); // faster redirect than href
-            }
-        })();
-    </script>
+    <script src="/assets/js/auth-check.js"></script>
 </head>
 
 <body>
@@ -389,102 +382,12 @@
 <!-- pace js -->
 <script src="/assets/libs/pace-js/pace.min.js"></script>
 
-<script>
-    var allText = /*[[${'All'}]]*/ 'All';
-</script>
+    <script>
+        var allText = /*[[${'All'}]]*/ 'All';
+    </script>
 
-<!-- DataTables Initialization -->
-<script>
-    $(document).ready(function () {
-        $('#example').DataTable({
-            responsive: true, // Enables responsive behavior
-            lengthMenu: [
-                    [10, 20, 50, 100, -1],
-                    [10, 20, 50, 100, allText]
-                ],
-            pageLength: 10, // Default rows per page
-            dom: 'lBfrtip', // Enables buttons like export
-            buttons: [
-                'copy', 'csv', 'excel', 'pdf', 'print'
-            ],
-            language: {
-                search: "Search Table:", // Customize search input placeholder
-                lengthMenu: "Show _MENU_ entries", // Customize length menu text
-            }
-        });
-    });
-</script>
-
-
-<!-- JavaScript to Handle Modal Data -->
-<script>
-    document.querySelectorAll('.view-links').forEach(button => {
-        button.addEventListener('click', function () {
-            let row = this.closest('tr');
-            let link = row.getAttribute('data-links');
-            let countries = JSON.parse(row.getAttribute('data-countries'));
-
-            document.getElementById('originalLink').href = link;
-            document.getElementById('originalLink').textContent = link;
-
-            let countryList = document.getElementById('countryList');
-            countryList.innerHTML = '';
-
-            countries.forEach(country => {
-                let li = document.createElement('li');
-                li.innerHTML = `${country.flag} ${country.name} (${country.count})`;
-                countryList.appendChild(li);
-            });
-        });
-    });
-</script>
-
-<script>
-    const token = localStorage.getItem("jwtToken");
-        if (!token) {
-            window.location.href = "/login";  // Redirect if not logged in
-        } else {
-            document.addEventListener("DOMContentLoaded", function () {
-            document.getElementById("addForm").addEventListener("submit", function (event) {
-                event.preventDefault(); // Prevent form from reloading the page
-
-                // Collect form data
-                let formData = {
-                    username: document.getElementById("username").value,
-                    email: document.getElementById("details").value,
-                    company: document.getElementById("company").value
-                };
-
-                // Make API request
-                fetch("/admin/create/client", {  // Replace with your actual API endpoint
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Authorization": "Bearer " + token  // Add JWT token
-                    },
-                    body: JSON.stringify(formData)
-                })
-                .then(response => {
-                        if (response.status === 401) {
-                            alert("Session expired. Please log in again.");
-                            localStorage.removeItem('jwtToken');
-                            window.location.href = "/login";
-                            return;
-                        }
-                        return response.json();
-                    })
-                .then(data => {
-                    alert("User added successfully!");  // Success message
-                    document.getElementById("addForm").reset();  // Clear form
-                })
-                .catch(error => {
-                    console.error("Error:", error);
-                    alert("Failed to add user. Maybe userName already exist , try with a different userName");
-                });
-            });
-        });
-    }
-</script>
+    <!-- Create Client page JavaScript -->
+    <script src="/assets/js/pages/create-client.js"></script>
 </body>
 
 </html>

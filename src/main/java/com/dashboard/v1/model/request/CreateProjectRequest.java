@@ -14,9 +14,6 @@ import java.util.List;
 public class CreateProjectRequest {
     private String projectIdentifier;
     private ProjectStatus status;
-    private String Quota;
-    private String loi;
-    private String ir;
     private String counts;
     private List<CountryLink> countryLinks;
     private String clientUsername;

@@ -5,6 +5,9 @@ import com.dashboard.v1.model.request.AssignProjectRequest;
 import com.dashboard.v1.repository.ProjectRepository;
 import com.dashboard.v1.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.hibernate.Hibernate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -12,6 +15,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.transaction.Transactional;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -19,47 +23,71 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class assignProjects {
 
+    private static final Logger logger = LoggerFactory.getLogger(assignProjects.class);
+
     private final UserRepository userRepository;
     private final ProjectRepository projectRepository;
 
     // Get all vendors and projects
     @GetMapping("/vendors-projects")
+    @Transactional
     public ResponseEntity<Map<String, Object>> getVendorsAndProjects() {
-        Optional<List<User>> vendors = userRepository.findByRole(Role.VENDOR);
-        List<Project> projects = projectRepository.findAll();
+        logger.info("Fetching vendors and projects for assignment");
+        try {
+            Optional<List<User>> vendors = userRepository.findByRole(Role.VENDOR);
 
-        List<Project> availableForAssign = projects.stream()
-                .filter(p -> p.getStatus() == ProjectStatus.OPEN)
-                .collect(Collectors.toList());
+            if (!vendors.isPresent()) {
+                logger.warn("No vendors found in database");
+                Map<String, Object> errorResponse = new HashMap<>();
+                errorResponse.put("error", "No vendors found");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+            }
 
-        List<User> vendorNotHidden = vendors.get().stream()
-                .filter(v -> v.getIsShown() == IsRemoved.show)
-                .collect(Collectors.toList());
-        Map<String, Object> response = new HashMap<>();
-        response.put("vendors", vendorNotHidden);
-        response.put("projects", availableForAssign);
+            // Use findAllWithClient to eagerly load client relationships
+            logger.info("Fetching active projects with client relationships");
+            List<Project> availableForAssign = projectRepository.findAllWithClient(ProjectStatus.ACTIVE);
 
-        return ResponseEntity.ok(response);
+            List<User> vendorNotHidden = vendors.get().stream()
+                    .filter(v -> v.getIsShown() == IsRemoved.show)
+                    .collect(Collectors.toList());
+
+            logger.info("Found {} active projects and {} visible vendors",
+                       availableForAssign.size(), vendorNotHidden.size());
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("vendors", vendorNotHidden);
+            response.put("projects", availableForAssign);
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("Error fetching vendors and projects", e);
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Failed to fetch vendors and projects: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
     }
 
     @PostMapping("/assign-projects")
+    @Transactional
     public ResponseEntity<String> assignProjectsToVendor(@RequestBody AssignProjectRequest request) {
-        Optional<List<User>> vendorOpt = userRepository.findByIdIn(request.getVendorIds());
-        if (!vendorOpt.isPresent()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Vendor not found");
-        }
+        try {
+            Optional<List<User>> vendorOpt = userRepository.findByIdIn(request.getVendorIds());
+            if (!vendorOpt.isPresent()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Vendor not found");
+            }
 
-        List<User> vendors = vendorOpt.get().stream().filter(vendor -> vendor.getIsShown() == IsRemoved.show)
-                .collect(Collectors.toList());
-        vendors.forEach(vendor ->{
+            List<User> vendors = vendorOpt.get().stream().filter(vendor -> vendor.getIsShown() == IsRemoved.show)
+                    .collect(Collectors.toList());
 
+            vendors.forEach(vendor -> {
                 List<String> projects = vendor.getProjectsId();
                 List<String> selectedProjects = request.getProjectIds();
 
                 selectedProjects.forEach(projectId -> {
-                    Optional<Project> optionalProject = projectRepository.findByProjectIdentifier(projectId);
+                    // Use the safe query that doesn't load client (we don't need it here)
+                    Optional<Project> optionalProject = projectRepository.findByProjectIdentifierWithoutClient(projectId);
 
-                    if (optionalProject.isPresent() && !projects.contains(projectId) && optionalProject.get().getStatus() == ProjectStatus.OPEN) {
+                    if (optionalProject.isPresent() && !projects.contains(projectId) && optionalProject.get().getStatus() == ProjectStatus.ACTIVE) {
                         Project project = optionalProject.get();
 
                         List<String> vendorsOfProject = project.getVendorsUsername();
@@ -73,17 +101,17 @@ public class assignProjects {
                             projectRepository.save(project);
                             projects.add(projectId);
                         }
-
-
                     }
                 });
 
-
                 vendor.getProjectsId().addAll(projects);
                 userRepository.save(vendor);
+            });
 
-        });
-
-        return ResponseEntity.ok("Projects assigned successfully!");
+            return ResponseEntity.ok("Projects assigned successfully!");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Failed to assign projects: " + e.getMessage());
+        }
     }
 }

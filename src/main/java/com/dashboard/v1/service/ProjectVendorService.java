@@ -27,6 +27,7 @@ public class ProjectVendorService {
             entity.setCompletedSurveys(0);
             entity.setTerminatedSurveys(0);
             entity.setQuotaFullSurveys(0);
+            entity.setSecurityTerminateSurveys(0);
         }
 
         // Increment based on type
@@ -39,6 +40,9 @@ public class ProjectVendorService {
                 break;
             case QUOTAFULL:
                 entity.setQuotaFullSurveys(entity.getQuotaFullSurveys() + 1);
+                break;
+            case SECURITYTERMINATE:
+                entity.setSecurityTerminateSurveys(entity.getSecurityTerminateSurveys() + 1);
                 break;
             default:
                 throw new IllegalArgumentException("Invalid survey type: " + type);

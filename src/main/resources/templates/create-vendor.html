@@ -30,14 +30,7 @@
     <!-- Responsive datatable examples -->
     <link href="/assets/libs/datatables.net-responsive-bs4/css/responsive.bootstrap4.min.css" rel="stylesheet"
           type="text/css" />
-    <script>
-        (function() {
-            const token = localStorage.getItem("jwtToken");
-            if (!token) {
-                window.location.replace("/login"); // faster redirect than href
-            }
-        })();
-    </script>
+    <script src="/assets/js/auth-check.js"></script>
 </head>
 
 <body>
@@ -311,6 +304,15 @@
 
                                         </div>
 
+                                        <div class="col-lg-4 mb-3">
+
+                                            <div>
+                                                <label for="securityTerminate" class="form-label">Security Terminate</label>
+                                                <input type="text" class="form-control" id="securityTerminate" name="securityTerminate" required>
+                                            </div>
+
+                                        </div>
+
 
                                         <button type="submit" id="submitForm"
                                                 class="btn btn-primary mt-4">Submit</button>
@@ -412,121 +414,12 @@
 <!-- pace js -->
 <script src="/assets/libs/pace-js/pace.min.js"></script>
 
-<script>
-    var allText = /*[[${'All'}]]*/ 'All';
-</script>
+    <script>
+        var allText = /*[[${'All'}]]*/ 'All';
+    </script>
 
-<!-- DataTables Initialization -->
-<script>
-    $(document).ready(function () {
-        $('#example').DataTable({
-            responsive: true, // Enables responsive behavior
-            lengthMenu: [
-                    [10, 20, 50, 100, -1],
-                    [10, 20, 50, 100, allText]
-                ],
-            pageLength: 10, // Default rows per page
-            dom: 'lBfrtip', // Enables buttons like export
-            buttons: [
-                'copy', 'csv', 'excel', 'pdf', 'print'
-            ],
-            language: {
-                search: "Search Table:", // Customize search input placeholder
-                lengthMenu: "Show _MENU_ entries", // Customize length menu text
-            }
-        });
-    });
-</script>
-
-
-<!-- JavaScript to Handle Modal Data -->
-<script>
-    document.querySelectorAll('.view-links').forEach(button => {
-        button.addEventListener('click', function () {
-        let row = this.closest('tr');
-        let countryLinks = JSON.parse(row.getAttribute('data-country-links')); // Fetch country-links data
-
-        let countryList = document.getElementById('countryList');
-        countryList.innerHTML = ''; // Clear previous entries
-
-        countryLinks.forEach(linkObj => {
-            // Create a new list item
-            let li = document.createElement('li');
-
-            // Create a clickable link
-            let linkElement = document.createElement('a');
-            linkElement.href = linkObj.originalLink;
-            linkElement.textContent = linkObj.originalLink;
-            linkElement.target = "_blank";
-
-            // Append text and link
-            li.innerHTML = `<strong>${linkObj.country}:</strong> `;
-            li.appendChild(linkElement);
-
-            countryList.appendChild(li);
-                });
-            });
-    });
-
-</script>
-
-<script>
-    const token = localStorage.getItem("jwtToken");
-        if (!token) {
-            window.location.href = "/login";  // Redirect if not logged in
-        } else {
-    document.addEventListener("DOMContentLoaded", function () {
-    document.getElementById("addForm").addEventListener("submit", function (event) {
-        event.preventDefault(); // Prevent default form submission
-
-            // Show loader
-            document.getElementById("loader").style.display = "block";
-
-            // Collect form data
-            const formData = {
-                username: document.getElementById("username").value,
-                email: document.getElementById("email").value,
-                company: document.getElementById("company").value,
-                complete: document.getElementById("completed").value,
-                terminate: document.getElementById("terminated").value,
-                quotafull: document.getElementById("quota").value
-            };
-
-            // Call backend API
-            fetch("/admin/vendors/create", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": "Bearer " + token,  // Add JWT token
-                },
-                body: JSON.stringify(formData)
-            })
-            .then(response => {
-                if (response.status === 401) {
-                    alert("Session expired. Please log in again.");
-                    localStorage.removeItem('jwtToken');
-                    window.location.href = "/login";
-                    return;
-                }
-                return response.json();
-            })
-            .then(data => {
-                console.log("Success:", data);
-                alert("Vendor added successfully!");
-                document.getElementById("addForm").reset(); // Reset form
-            })
-            .catch(error => {
-                console.error("Error:", error);
-                alert("vendor already exist. Please try again with a different vendor username.");
-            })
-            .finally(() => {
-                // Hide loader
-                document.getElementById("loader").style.display = "none";
-            });
-        });
-    });
-}
-</script>
+    <!-- Create Vendor page JavaScript -->
+    <script src="/assets/js/pages/create-vendor.js"></script>
 </body>
 
 </html>
