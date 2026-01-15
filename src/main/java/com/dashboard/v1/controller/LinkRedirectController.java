@@ -122,12 +122,12 @@ public class LinkRedirectController {
         String countryCode = iPInfoService.getIPInfo(ip);
         logger.info("IP country code: {}, Expected country: {}", countryCode, country);
 
-//        if(countryCode != null && !countryCode.equalsIgnoreCase(country)) {
-//            logger.warn("Country mismatch - IP country: {}, Expected: {}, Blocking access", countryCode, country);
-//            return ResponseEntity.status(HttpStatus.FOUND)
-//                    .location(URI.create("/rejection?type=IP"))
-//                    .build();
-//        }
+        if(countryCode != null && !countryCode.equalsIgnoreCase(country)) {
+            logger.warn("Country mismatch - IP country: {}, Expected: {}, Blocking access", countryCode, country);
+            return ResponseEntity.status(HttpStatus.FOUND)
+                    .location(URI.create("/rejection?type=IP"))
+                    .build();
+        }
         logger.debug("Country verification passed");
 
         // Step 6: Check if IP already attempted this survey
@@ -135,12 +135,12 @@ public class LinkRedirectController {
         List<SurveyResponse> matchingIpSurveys = surveyResponseRepository.findByIpAddress(ip, pid);
         logger.debug("Found {} surveys from this IP for project: {}", matchingIpSurveys.size(), pid);
 
-//        if (!matchingIpSurveys.isEmpty()) {
-//            logger.warn("Survey already attempted by IP: {} for project: {}", ip, pid);
-//            return ResponseEntity.status(HttpStatus.FOUND)
-//                    .location(URI.create("/rejection?type=TERMINATE"))
-//                    .build();
-//        }
+        if (!matchingIpSurveys.isEmpty()) {
+            logger.warn("Survey already attempted by IP: {} for project: {}", ip, pid);
+            return ResponseEntity.status(HttpStatus.FOUND)
+                    .location(URI.create("/rejection?type=TERMINATE"))
+                    .build();
+        }
         logger.debug("No previous survey attempts found for this IP and project");
 
 
