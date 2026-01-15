@@ -16,11 +16,13 @@ public class SurveyResponse {
     private Long id;
 
     @Enumerated(EnumType.STRING)
-    private SurveyStatus status;
+    private SurveyStatus status = SurveyStatus.IN_PROGRESS;
 
     private String ipAddress;
 
-    private LocalDateTime timeStart;
+    private LocalDateTime startTime;
+
+    private LocalDateTime endTime;
 
     private String country;
 

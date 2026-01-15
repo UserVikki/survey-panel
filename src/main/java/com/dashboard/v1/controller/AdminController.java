@@ -151,46 +151,25 @@ public class AdminController {
         }
 
         Client client = clientOptional.get();
-        List<Project> projects = client.getProjects();
-        if (projects.isEmpty()) {
-            return ResponseEntity.ok(Collections.emptyList());
-        }
 
-        List<String> projectIds = new ArrayList<>();
-        projects.forEach(project -> projectIds.add(project.getProjectIdentifier()));
+        List<String> projectIds = client.getProjects();
 
-        List<SurveyResponse> surveyResponses = surveyResponseRepository.findByProjectIdIn(projectIds);
-        Map<String, GetClientResponse> projectResponseMap = new HashMap<>();
+        List<GetClientResponse> responseList = new ArrayList<>();
 
-        for (SurveyResponse survey : surveyResponses) {
-            String projectId = survey.getProjectId();
-            SurveyStatus status = survey.getStatus();
-
-            // If projectId is not already in map, initialize
-            projectResponseMap.putIfAbsent(projectId, new GetClientResponse());
-            GetClientResponse response = projectResponseMap.get(projectId);
-            response.setProjectId(projectId);
-
-            // Count status occurrences
-            switch (status) {
-                case COMPLETE:
-                    response.setComplete(String.valueOf(Integer.parseInt(response.getComplete() == null ? "0" : response.getComplete()) + 1));
-                    break;
-                case TERMINATE:
-                    response.setTerminate(String.valueOf(Integer.parseInt(response.getTerminate() == null ? "0" : response.getTerminate()) + 1));
-                    break;
-                case QUOTAFULL:
-                    response.setQuotafull(String.valueOf(Integer.parseInt(response.getQuotafull() == null ? "0" : response.getQuotafull()) + 1));
-                    break;
-                case SECURITYTERMINATE:
-                    response.setSecurityTerminate(String.valueOf(Integer.parseInt(response.getSecurityTerminate() == null ? "0" : response.getSecurityTerminate()) + 1));
-                    break;
-                default:
-                    break;
+        projectIds.forEach(projectId ->
+        {
+            Optional<Project> project = projectRepository.findByProjectIdentifier(projectId);
+            if(project.isPresent()) {
+                GetClientResponse getClientResponse = new GetClientResponse();
+                getClientResponse.setProjectId(projectId);
+                getClientResponse.setComplete(String.valueOf(project.get().getComplete()));
+                getClientResponse.setTerminate(String.valueOf(project.get().getTerminate()));
+                getClientResponse.setQuotafull(String.valueOf(project.get().getQuotafull()));
+                getClientResponse.setSecurityTerminate(String.valueOf(project.get().getSecurityTerminate()));
+                responseList.add(getClientResponse);
             }
-        }
+        });
 
-        List<GetClientResponse> responseList = new ArrayList<>(projectResponseMap.values());
         return ResponseEntity.ok(responseList);
     }
 

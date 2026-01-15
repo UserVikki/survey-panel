@@ -5,27 +5,25 @@ import com.dashboard.v1.repository.ProjectRepository;
 import com.dashboard.v1.repository.SurveyResponseRepository;
 import com.dashboard.v1.repository.UserRepository;
 import com.dashboard.v1.repository.VendorProjectLinkRepository;
+import com.dashboard.v1.security.LinkRedirectService;
 import com.dashboard.v1.service.IPInfoService;
 import com.dashboard.v1.util.SslUtil;
 import com.dashboard.v1.util.UrlUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.ModelAndView;
 
 import javax.servlet.http.HttpServletRequest;
-import java.io.UnsupportedEncodingException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 
 @RestController
@@ -51,31 +49,53 @@ public class LinkRedirectController {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private LinkRedirectService linkRedirectService;
+
     @GetMapping("/survey")
     public ResponseEntity<String> vendorClick(@RequestParam("uid") String uid,
                                               @RequestParam("pid") String pid,
                                               @RequestParam("token") String token,
                                               @RequestParam("country") String country,
-                                              HttpServletRequest request) throws UnsupportedEncodingException {
+                                              HttpServletRequest request) {
 
         logger.info("========== SURVEY CLICK START ==========");
         logger.info("Received vendor click callback - uid: {}, pid: {}, token: {}, country: {}", uid, pid, token, country);
 
-        // Step 1: Validate project exists
-        logger.debug("Step 1: Checking if project exists for pid: {}", pid);
+
         Optional<Project> projectOpt = projectRepository.findByProjectIdentifier(pid);
         if(!projectOpt.isPresent()){
             logger.warn("Project not found for pid: {}", pid);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body("Project not found for pid: " + pid);
+            return ResponseEntity.status(HttpStatus.FOUND)
+                    .location(URI.create("/rejection?type=TERMINATE"))
+                    .build();
+        }
+
+        if(projectOpt.get().getCounts() <= projectOpt.get().getComplete()){
+            logger.warn("Project quota full for pid: {}", pid);
+            return ResponseEntity.status(HttpStatus.FOUND)
+                    .location(URI.create("/rejection?type=QUOTA_FULL"))
+                    .build();
         }
         logger.info("Project found: {} (Status: {})", pid, projectOpt.get().getStatus());
 
+
+        Optional<User> vendor = userRepository.findByToken(token);
+
+        if (!vendor.isPresent()) {
+            logger.error("Vendor not found for token: {}", token);
+            return ResponseEntity.status(HttpStatus.FOUND)
+                    .location(URI.create("/rejection?type=TERMINATE"))
+                    .build();
+        }
+
         // Step 2: Check project status
-        if(projectOpt.get().getStatus() == ProjectStatus.INACTIVE){
+        if(projectOpt.get().getStatus() != ProjectStatus.ACTIVE ){
             logger.warn("Project is INACTIVE - pid: {}", pid);
-            return ResponseEntity.status(HttpStatus.GONE)
-                    .body("Project is Closed : " + pid);
+            String rejectionType = projectOpt.get().getStatus() == ProjectStatus.INACTIVE ? "PAUSED" : "CLOSED";
+            return ResponseEntity.status(HttpStatus.FOUND)
+                    .location(URI.create("/rejection?type=" + rejectionType))
+                    .build();
         }
         logger.debug("Project status is ACTIVE - proceeding...");
 
@@ -85,7 +105,10 @@ public class LinkRedirectController {
 
         if (surveyResponseOpt.isPresent()) {
             logger.warn("Survey already attempted by uid: {} for project: {}", uid, pid);
-            return ResponseEntity.ok("ALREADY ATTEMPTED SURVEY");
+            return ResponseEntity.status(HttpStatus.FOUND)
+                    .location(URI.create("/rejection?type=TERMINATE"))
+                    .build();
+
         }
         logger.debug("No existing survey found for uid: {}", uid);
 
@@ -99,10 +122,12 @@ public class LinkRedirectController {
         String countryCode = iPInfoService.getIPInfo(ip);
         logger.info("IP country code: {}, Expected country: {}", countryCode, country);
 
-        if(countryCode != null && !countryCode.equalsIgnoreCase(country)) {
-            logger.warn("Country mismatch - IP country: {}, Expected: {}, Blocking access", countryCode, country);
-            return ResponseEntity.ok("Access restricted: Your IP address does not correspond to the selected country. ;)");
-        }
+//        if(countryCode != null && !countryCode.equalsIgnoreCase(country)) {
+//            logger.warn("Country mismatch - IP country: {}, Expected: {}, Blocking access", countryCode, country);
+//            return ResponseEntity.status(HttpStatus.FOUND)
+//                    .location(URI.create("/rejection?type=IP"))
+//                    .build();
+//        }
         logger.debug("Country verification passed");
 
         // Step 6: Check if IP already attempted this survey
@@ -110,99 +135,54 @@ public class LinkRedirectController {
         List<SurveyResponse> matchingIpSurveys = surveyResponseRepository.findByIpAddress(ip, pid);
         logger.debug("Found {} surveys from this IP for project: {}", matchingIpSurveys.size(), pid);
 
-        for (SurveyResponse survey : matchingIpSurveys) {
-            if (Objects.equals(survey.getProjectId(), pid)) {
-                logger.warn("Survey already attempted by IP: {} for project: {}", ip, pid);
-                return ResponseEntity.ok("ALREADY ATTEMPTED SURVEY");
-            }
-        }
+//        if (!matchingIpSurveys.isEmpty()) {
+//            logger.warn("Survey already attempted by IP: {} for project: {}", ip, pid);
+//            return ResponseEntity.status(HttpStatus.FOUND)
+//                    .location(URI.create("/rejection?type=TERMINATE"))
+//                    .build();
+//        }
         logger.debug("No previous survey attempts found for this IP and project");
+
 
         // Step 7: Create new survey response
         logger.info("Step 7: Creating new survey response - uid: {}, pid: {}, ip: {}", uid, pid, ip);
         SurveyResponse newResponse = new SurveyResponse();
         newResponse.setUId(uid);
         newResponse.setProjectId(pid);
-        ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
-        newResponse.setTimeStart(now.toLocalDateTime());
+        newResponse.setStartTime(ZonedDateTime.now(ZoneId.of("Asia/Kolkata")).toLocalDateTime());
         newResponse.setIpAddress(ip);
-        logger.debug("Survey start time set to: {}", now.toLocalDateTime());
+        logger.debug("Survey start time set to: {}", ZonedDateTime.now(ZoneId.of("Asia/Kolkata")).toLocalDateTime());
 
-        // Step 8: Validate vendor by token
-        logger.debug("Step 8: Looking up vendor by token: {}", token);
-        Optional<User> vendor = userRepository.findByToken(token);
-
-        if (vendor.isPresent()) {
-            String vendorUsername = vendor.get().getUsername();
-            newResponse.setVendorUsername(vendorUsername);
-            logger.info("Vendor found: {}", vendorUsername);
-        } else {
-            logger.error("Vendor not found for token: {}", token);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body("Vendor not found for token: " + token);
-        }
+        newResponse.setVendorUsername(vendor.get().getUsername());
+        logger.info("Vendor found: {}", vendor.get().getUsername());
 
         // Step 9: Get redirect URL from project
         logger.debug("Step 9: Fetching redirect URL for country: {}", country);
-        Project project = projectOpt.get();
         newResponse.setCountry(country);
-        List<CountryLink> links = project.getCountryLinks();
-        logger.debug("Project has {} country links", links != null ? links.size() : 0);
-
-        // Find the first matching country and get its originalLink
-        String redirectUrl = links.stream()
-                .filter(link -> Objects.equals(link.getCountry().name(), country))
-                .map(CountryLink::getOriginalLink)
-                .findFirst()
-                .orElse(null);
-
-        if(redirectUrl == null){
-            logger.error("No survey link found for country: {} in project: {}", country, pid);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body("no survey links found in the project, please create new project with same links properly");
-        }
-        logger.info("Found redirect URL for country {}: {}", country, redirectUrl);
-
-        String url = redirectUrl.trim();
-
-        // Step 10: Set survey status and save
-        newResponse.setStatus(SurveyStatus.IN_PROGRESS);
-        logger.debug("Step 10: Saving survey response with status: IN_PROGRESS");
 
         try {
             surveyResponseRepository.save(newResponse);
             logger.info("Survey response saved successfully - uid: {}, pid: {}, vendor: {}",
-                       uid, pid, newResponse.getVendorUsername());
+                    uid, pid, newResponse.getVendorUsername());
         } catch (Exception e) {
             logger.error("Error saving survey response - uid: {}, pid: {}", uid, pid, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error saving survey response: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.FOUND)
+                    .location(URI.create("/rejection?type=INTERNAL_ERROR"))
+                    .build();
         }
-
-        // Step 11: Build redirect URL
-        HttpHeaders headers = new HttpHeaders();
-        url = url.replace("[AMI]", uid);
-        logger.info("Step 11: Final redirect URL (with uid replaced): {}", url);
-
-        // Step 12: Validate URL and redirect
-        if (!isValidURL(url)) {
-            logger.error("Invalid redirect URL: {}", url);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid redirect URL: " + url);
-        }
-
-        headers.setLocation(URI.create(url));
-        logger.info("Redirecting to survey URL: {}", url);
-        logger.info("========== SURVEY CLICK SUCCESS - Redirecting ==========");
-
-        return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(url)).build();
+        return linkRedirectService.passedSurvey(projectOpt.get(), uid, pid, country);
     }
 
-    private boolean isValidURL(String url) {
+    @GetMapping("/rejection")
+    public ModelAndView showRejectionPage(@RequestParam("type") String type) {
+        logger.info("Rejection page requested - type: {}", type);
+
         try {
-            new URI(url);
-            return true;
-        } catch (URISyntaxException e) {
-            return false;
+            SurveyRejection rejectionType = SurveyRejection.valueOf(type.toUpperCase());
+            return linkRedirectService.rejectedSurvey(rejectionType);
+        } catch (IllegalArgumentException e) {
+            logger.error("Invalid rejection type: {}", type);
+            return linkRedirectService.rejectedSurvey(SurveyRejection.INTERNAL_ERROR);
         }
     }
 

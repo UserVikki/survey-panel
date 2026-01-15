@@ -1,6 +1,5 @@
-package com.dashboard.v1.model.request;
+package com.dashboard.v1.model.response;
 
-import com.dashboard.v1.entity.CountryLink;
 import com.dashboard.v1.entity.ProjectStatus;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -11,14 +10,18 @@ import java.util.List;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class CreateProjectRequest {
+public class ProjectTableDataResponse {
     private String projectIdentifier;
     private ProjectStatus status;
+    private Long complete;
+    private Long terminate;
+    private Long quotafull;
+    private Long securityTerminate;
     private Long counts;
+    private List<String> vendorsUsername;
     private String loi;
     private String ir;
-    private String cpi;
     private String quota;
-    private List<CountryLink> countryLinks;
-    private String clientUsername;
+    private String cpi;
 }
+

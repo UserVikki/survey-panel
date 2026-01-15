@@ -11,8 +11,6 @@ import java.util.UUID;
 @Table(name = "client")
 @Getter
 @Setter
-@ToString(exclude = "projects")  // 🔥 IMPORTANT
-@EqualsAndHashCode(exclude = "projects")
 public class Client {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -30,9 +28,10 @@ public class Client {
     @Column(nullable = false, unique = true)
     private String token;
 
-    @OneToMany(mappedBy = "client", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
-    @JsonIgnoreProperties("client")  // Break the infinite recursion
-    private List<Project> projects;
+    @ElementCollection
+    @CollectionTable(name = "client_projects", joinColumns = @JoinColumn(name = "client_id"))
+    @Column(name = "project_identifier")
+    private List<String> projects;
 
     @PrePersist
     public void generateToken() {

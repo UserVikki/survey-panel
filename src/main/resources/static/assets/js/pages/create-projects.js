@@ -7,15 +7,19 @@ $(document).ready(function(){
 
         let fieldHTML = `
             <div class="row fieldGroup">
-                <div class="col-lg-2 mb-3">
+                <div class="col-lg-3 mb-3">
                     <label for="country" class="form-label">Country Name</label>
                     <select name="country[]" class="form-select" required>
                         ${options}
                     </select>
                 </div>
-                <div class="col-lg-2 mb-3">
+                <div class="col-lg-4 mb-3">
                     <label for="links" class="form-label">Links</label>
-                    <input type="text" class="form-control" name="links[]">
+                    <input type="text" class="form-control" name="links[]" required>
+                </div>
+                <div class="col-lg-2 mb-3">
+                    <label for="cpi" class="form-label">CPI</label>
+                    <input type="text" class="form-control" name="cpi[]" placeholder="e.g., 5.00" required>
                 </div>
                 <div class="col-lg-2 mb-3 d-flex align-items-end">
                     <button type="button" class="btn btn-danger remove">Remove</button>
@@ -38,15 +42,16 @@ if (!token) {
     document.getElementById("addForm").addEventListener("submit", function(event) {
         event.preventDefault(); // Prevent default form submission
 
-        // Select all country and link input fields
+        // Select all country, link, and CPI input fields
         let countryInputs = document.querySelectorAll("select[name='country[]']");
         let linkInputs = document.querySelectorAll("input[name='links[]']");
+
         let countryValues = Array.from(countryInputs).map(input => input.value);
         console.log("Countries:", countryValues);
         let linkValues = Array.from(linkInputs).map(input => input.value);
         console.log("Links:", linkValues);
 
-        // Construct an array of objects containing country-link pairs
+        // Construct an array of objects containing country-link-CPI triplets
         let countryLinks = Array.from(countryInputs).map((input, index) => ({
             country: input.value,
             originalLink: linkInputs[index]?.value || ""
@@ -55,6 +60,11 @@ if (!token) {
         let formData = {
             projectIdentifier: document.getElementById("pid").value,
             clientUsername: document.getElementById("client").value,
+            ir: document.getElementById("ir").value,
+            loi: document.getElementById("loi").value,
+            quota: document.getElementById("quota").value,
+            counts: document.getElementById("counts").value,
+            cpi: document.getElementById("cpi").value,
             countryLinks: countryLinks
         };
 
@@ -77,9 +87,9 @@ if (!token) {
             return response.json();
         })
         .then(data => {
+            console.log("Success:", data);
             document.getElementById("loader").style.display = "none"; // Hide loader
-            alert("Project created successfully!");
-            console.log(data);
+            alert(data.message);
             document.getElementById("addForm").reset(); // Reset form
         })
         .catch(error => {

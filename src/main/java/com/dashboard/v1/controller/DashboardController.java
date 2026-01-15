@@ -60,23 +60,4 @@ public class DashboardController {
         return ResponseEntity.ok(result);
     }
 
-    @GetMapping("/surveys")
-    @PreAuthorize("hasAnyRole('ADMIN', 'VENDOR')")
-    public ResponseEntity<?> getFilteredSurveys(
-            @RequestParam(required = false) String projectId,
-            @RequestParam(required = false) String userId,
-            @RequestParam(required = false) String vendorName,
-            @RequestParam(required = false) SurveyStatus status,
-            @RequestParam(required = false) LocalDateTime startTime,
-            @RequestParam(required = false) LocalDateTime endTime,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
-    ) {
-        Pageable pageable = PageRequest.of(page, size);
-        Page<SurveyResponse> surveyPage = surveyResponseRepository.findFilteredSurveys(
-                projectId, userId, vendorName, status, startTime, endTime, pageable);
-
-        return ResponseEntity.ok(surveyPage);
-    }
-
 }

@@ -19,6 +19,8 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -77,13 +79,42 @@ public class SurveyResponseController {
         if(!(surveyResponse.get().getStatus() == SurveyStatus.IN_PROGRESS)) return ResponseEntity.ok("THIS UID is already registered for a response ");
 
         res.setStatus(status);
-
+        res.setEndTime(ZonedDateTime.now(ZoneId.of("Asia/Kolkata")).toLocalDateTime());
         surveyResponseRepository.save(res);
 
-        if(status == SurveyStatus.COMPLETE){
-            Long currentCount = project.getCounts();
-            project.setCounts(currentCount + 1);
-            projectRepository.save(project);
+        // Update project counts based on survey status
+        switch (status) {
+            case COMPLETE:
+                Long completeCount = project.getComplete();
+                project.setComplete(completeCount + 1);
+                logger.info("Incremented complete count for project {} to {}", project.getProjectIdentifier(), completeCount + 1);
+                projectRepository.save(project);
+                break;
+
+            case TERMINATE:
+                Long terminateCount = project.getTerminate();
+                project.setTerminate(terminateCount + 1);
+                logger.info("Incremented terminate count for project {} to {}", project.getProjectIdentifier(), terminateCount + 1);
+                projectRepository.save(project);
+                break;
+
+            case QUOTAFULL:
+                Long quotaFullCount = project.getQuotafull();
+                project.setQuotafull(quotaFullCount + 1);
+                logger.info("Incremented quota full count for project {} to {}", project.getProjectIdentifier(), quotaFullCount + 1);
+                projectRepository.save(project);
+                break;
+
+            case SECURITYTERMINATE:
+                Long securityTerminateCount = project.getSecurityTerminate();
+                project.setSecurityTerminate(securityTerminateCount + 1);
+                logger.info("Incremented security terminate count for project {} to {}", project.getProjectIdentifier(), securityTerminateCount + 1);
+                projectRepository.save(project);
+                break;
+
+            default:
+                logger.warn("Unhandled survey status: {} for project {}", status, project.getProjectIdentifier());
+                break;
         }
 
         projectVendorService.incrementSurveyCount(res.getVendorUsername(), res.getProjectId(), status);

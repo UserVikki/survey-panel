@@ -32,6 +32,59 @@
     <link href="/assets/libs/datatables.net-responsive-bs4/css/responsive.bootstrap4.min.css" rel="stylesheet"
         type="text/css" />
     <script src="/assets/js/auth-check.js"></script>
+
+    <!-- Status Dropdown Styles -->
+    <style>
+        .status-select {
+            font-weight: 600;
+            border: 2px solid;
+            min-width: 120px;
+        }
+
+        .status-active {
+            color: #28a745;
+            border-color: #28a745;
+            background-color: #d4edda;
+        }
+
+        .status-active:focus {
+            border-color: #28a745;
+            box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+        }
+
+        .status-inactive {
+            color: #dc3545;
+            border-color: #dc3545;
+            background-color: #f8d7da;
+        }
+
+        .status-inactive:focus {
+            border-color: #dc3545;
+            box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+        }
+
+        .status-closed {
+            color: #6c757d;
+            border-color: #6c757d;
+            background-color: #e2e3e5;
+        }
+
+        .status-closed:focus {
+            border-color: #6c757d;
+            box-shadow: 0 0 0 0.2rem rgba(108, 117, 125, 0.25);
+        }
+
+        .status-invoiced {
+            color: #007bff;
+            border-color: #007bff;
+            background-color: #cfe2ff;
+        }
+
+        .status-invoiced:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+        }
+    </style>
 </head>
 
 <body>
@@ -250,10 +303,13 @@
                                     <tr>
                                         <th>Project ID</th>
                                         <th>Status</th>
+                                        <th>Complete</th>
+                                        <th>Terminate</th>
+                                        <th>Quota Full</th>
+                                        <th>Security Terminate</th>
                                         <th>Counts</th>
-                                        <th>Client</th>
-                                        <th>Links</th>
                                         <th>Vendors</th>
+                                        <th>Details</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -314,6 +370,43 @@
                     <div class="modal-body">
                         <h6>Vendor Usernames:</h6>
                         <ul id="vendorList"></ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Project Details Modal -->
+        <div class="modal fade" id="detailsModal" tabindex="-1" aria-labelledby="detailsModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="detailsModalLabel">Project Details</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <h6>Project ID: <span id="detailsProjectId" class="text-primary"></span></h6>
+                        <hr>
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <strong>LOI (Length of Interview):</strong>
+                                <p id="detailsLOI" class="text-muted">-</p>
+                            </div>
+                            <div class="col-md-12 mb-3">
+                                <strong>IR (Incidence Rate):</strong>
+                                <p id="detailsIR" class="text-muted">-</p>
+                            </div>
+                            <div class="col-md-12 mb-3">
+                                <strong>Quota:</strong>
+                                <p id="detailsQuota" class="text-muted">-</p>
+                            </div>
+                            <div class="col-md-12 mb-3">
+                                <strong>CPI:</strong>
+                                <p id="detailsCpi" class="text-muted">-</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                     </div>
                 </div>
             </div>

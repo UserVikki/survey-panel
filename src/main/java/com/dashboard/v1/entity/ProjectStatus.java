@@ -2,5 +2,7 @@ package com.dashboard.v1.entity;
 
 public enum ProjectStatus {
     ACTIVE,
-    INACTIVE
+    INACTIVE,
+    CLOSED,
+    INVOICED
 }

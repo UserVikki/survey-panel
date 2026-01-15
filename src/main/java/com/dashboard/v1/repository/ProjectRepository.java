@@ -19,11 +19,13 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
     @Query("SELECT p FROM Project p WHERE p.projectIdentifier = :pId")
     Optional<Project> findByProjectIdentifierWithoutClient(@Param("pId") String pId);
 
+    // Fetch all projects without loading client relationship to avoid infinite recursion
+    @Query("SELECT p FROM Project p ORDER BY p.createdAt DESC")
+    List<Project> findAllProjectsWithoutClient();
+
     // Fetch projects with client eagerly loaded to avoid lazy initialization issues
-    @Query("SELECT p FROM Project p LEFT JOIN FETCH p.client WHERE p.status = :status ORDER BY p.createdAt")
+    @Query("SELECT p FROM Project p WHERE p.status = :status ORDER BY p.createdAt")
     List<Project> findAllWithClient(@Param("status") ProjectStatus status);
 
-    @Query("SELECT p FROM Project p WHERE p.status = :status ORDER BY p.createdAt")
-    List<Project> findAll(@Param("status") ProjectStatus status);
 
 }

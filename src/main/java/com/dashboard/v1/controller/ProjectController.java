@@ -1,12 +1,17 @@
 package com.dashboard.v1.controller;
 
-import com.dashboard.v1.entity.Client;
-import com.dashboard.v1.entity.Project;
-import com.dashboard.v1.entity.ProjectStatus;
+import com.dashboard.v1.AppProperties;
+import com.dashboard.v1.entity.*;
+import com.dashboard.v1.model.request.AssignProjectRequest;
 import com.dashboard.v1.model.request.CreateProjectRequest;
+import com.dashboard.v1.model.request.ProjectVendorLinksRequest;
+import com.dashboard.v1.model.response.GetVendorResponse;
+import com.dashboard.v1.model.response.ProjectTableDataResponse;
+import com.dashboard.v1.model.response.VendorLinks;
 import com.dashboard.v1.model.response.VendorProjectDetailsResponse;
 import com.dashboard.v1.repository.ClientRepository;
 import com.dashboard.v1.repository.ProjectRepository;
+import com.dashboard.v1.repository.UserRepository;
 import com.dashboard.v1.service.VendorProjectDetailsService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -28,9 +33,13 @@ public class ProjectController {
 
     private final ProjectRepository projectRepository;
 
+    private final UserRepository userRepository;
+
     private final VendorProjectDetailsService vendorProjectDetailsService;
 
     private final ClientRepository clientRepository;
+
+    private final AppProperties appProperties;
 
     @PostMapping("/create/project")
     @PreAuthorize("hasRole('ADMIN')")
@@ -68,7 +77,11 @@ public class ProjectController {
             Project project = new Project();
             project.setProjectIdentifier(request.getProjectIdentifier());
             project.setCountryLinks(request.getCountryLinks());
-            project.setClient(client);  // Set the owning side of the relationship
+            project.setIr(request.getIr());
+            project.setCounts(request.getCounts());
+            project.setLoi(request.getLoi());
+            project.setQuota(request.getQuota());
+            project.setCpi(request.getCpi());
 
             // Save the project first (this will set the client_id foreign key)
             Project savedProject = projectRepository.save(project);
@@ -77,7 +90,7 @@ public class ProjectController {
             if (client.getProjects() == null) {
                 client.setProjects(new ArrayList<>());
             }
-            client.getProjects().add(savedProject);
+            client.getProjects().add(savedProject.getProjectIdentifier());
             clientRepository.save(client);  // Update client to maintain bidirectional consistency
 
             logger.info("Project created successfully: {} for client: {}",
@@ -118,6 +131,85 @@ public class ProjectController {
         }
     }
 
+    @GetMapping("/table-data")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Transactional
+    public ResponseEntity<?> getProjects() {
+        logger.info("inside ProjectController /projects/table-data ");
+        try {
+            // Fetch all projects
+            List<Project> projects = projectRepository.findAllProjectsWithoutClient();
+
+            // Map to DTO to avoid infinite recursion from bidirectional relationship
+            List<ProjectTableDataResponse> response = new ArrayList<>();
+            for (Project project : projects) {
+                ProjectTableDataResponse dto = new ProjectTableDataResponse();
+                dto.setProjectIdentifier(project.getProjectIdentifier());
+                dto.setStatus(project.getStatus());
+                dto.setComplete(project.getComplete());
+                dto.setTerminate(project.getTerminate());
+                dto.setQuotafull(project.getQuotafull());
+                dto.setSecurityTerminate(project.getSecurityTerminate());
+                dto.setCounts(project.getCounts());
+                dto.setVendorsUsername(project.getVendorsUsername());
+                dto.setIr(project.getIr());
+                dto.setLoi(project.getLoi());
+                dto.setQuota(project.getQuota());
+                dto.setCpi(project.getCpi());
+                response.add(dto);
+            }
+
+            logger.info("Fetched {} projects for table data", response.size());
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("Error fetching projects: ", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Collections.singletonMap("error", "Failed to fetch projects: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping("/vendor-list")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Transactional
+    public ResponseEntity<List<VendorLinks>> getProjectVendorLinks(@RequestBody ProjectVendorLinksRequest request) {
+        logger.info("inside ProjectController /projects/vendor-list ");
+        try {
+
+            Optional<Project> project = projectRepository.findByProjectIdentifier(request.getProjectId());
+
+            if (!project.isPresent()) return ResponseEntity.ok(Collections.emptyList());
+
+            List<VendorLinks> vendorLinks = new ArrayList<>();
+
+            List<String> vendorIds = request.getVendorIds();
+
+            vendorIds.forEach(vendorId -> {
+                Optional<User> vendorOptional = userRepository.findByUsername(vendorId);
+                if (!vendorOptional.isPresent()) {
+                    logger.warn("Vendor not found: {}", vendorId);
+                    return;
+                }
+
+                User vendor = vendorOptional.get();
+
+                project.get().getCountryLinks().forEach(countrylink ->
+                {
+                    VendorLinks link = new VendorLinks();
+                    link.setVendorName(vendor.getUsername());
+                    link.setLink(appProperties.getDomain() + "/survey/" + vendor.getUserToken() + "/" + countrylink.getCountry() + "?PID=" + project.get().getProjectIdentifier() + "&UID=111");
+                    vendorLinks.add(link);
+                });
+
+            });
+            return ResponseEntity.ok(vendorLinks);
+        } catch (Exception e) {
+            logger.error("Error fetching projects: ", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Collections.emptyList());
+        }
+    }
+
     // ✅ Fetch projects assigned to vendor (Vendor only)
     @GetMapping("/vendor")
     public List<VendorProjectDetailsResponse> getVendorProjects(@RequestParam String username) {
@@ -136,10 +228,7 @@ public class ProjectController {
 
             if (projectOpt.isPresent()) {
                 Project project = projectOpt.get();
-                // Force initialization of client within transaction if lazy loaded
-                if (project.getClient() != null) {
-                    project.getClient().getUsername(); // Touch to initialize
-                }
+
                 return ResponseEntity.ok(project);
             } else {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
@@ -152,11 +241,13 @@ public class ProjectController {
         }
     }
 
-    // ✅ Fetch current project status by projectId and update it
+    // ✅ Update project status by projectId
     @GetMapping("/status/update/{projectId}")
     @Transactional
-    public ResponseEntity<?> getAndUpdateProjectStatus(@PathVariable String projectId) {
-        logger.info("inside ProjectController /status/update/{projectId} projectId : {} ", projectId);
+    public ResponseEntity<?> updateProjectStatus(
+            @PathVariable String projectId,
+            @RequestParam ProjectStatus status) {
+        logger.info("inside ProjectController /status/update/{projectId} projectId: {}, new status: {}", projectId, status);
 
         try {
             // Use query without client to avoid lazy loading issues
@@ -165,17 +256,17 @@ public class ProjectController {
             if (optionalProject.isPresent()) {
                 Project project = optionalProject.get();
 
-                // Toggle status
-                ProjectStatus newStatus = (project.getStatus() == ProjectStatus.ACTIVE)
-                    ? ProjectStatus.INACTIVE
-                    : ProjectStatus.ACTIVE;
-
-                project.setStatus(newStatus);
+                // Set the status from request parameter
+                project.setStatus(status);
                 projectRepository.save(project);
 
-                logger.info("Project status updated: {} - New status: {}", projectId, newStatus);
+                logger.info("Project status updated: {} - New status: {}", projectId, status);
 
-                return ResponseEntity.ok(Collections.singletonMap("success", newStatus.toString()));
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", true);
+                response.put("status", status.toString());
+                response.put("message", "Project status updated successfully");
+                return ResponseEntity.ok(response);
             } else {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(Collections.singletonMap("error", "Project not found"));

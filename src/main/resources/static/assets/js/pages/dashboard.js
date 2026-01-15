@@ -30,8 +30,10 @@ function populateTable(surveyResponses) {
             response.projectId,
             response.uid,
             `<span class="badge ${getStatusClass(response.status)}">${response.status}</span>`,
-            formatDate(response.timeStart),
-            response.ipAddress
+            formatDate(response.startTime),
+            formatDate(response.endTime),
+            response.ipAddress,
+            response.country
         ];
         table.row.add(row); // Adds the new row to DataTable
     });

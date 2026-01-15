@@ -86,11 +86,6 @@ function populateTable(users) {
             <td>${user.email}</td>
             <td>${user.companyName}</td>
             <td><a href="${vendorUrl}"><button type="button" class="btn btn-success view-links">View Vendor</button></a></td>
-            <td>
-                  <button class="btn ${getStatusClass(user.isShown)}" onclick="toggleStatus(this, '${user.username}')">
-                      ${user.isShown}
-                  </button>
-            </td>
         </tr>`;
 
         // ✅ Use insertAdjacentHTML to avoid re-parsing the entire innerHTML

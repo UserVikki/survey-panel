@@ -10,8 +10,6 @@ import java.util.List;
 @Entity
 @Getter
 @Setter
-@ToString(exclude = "client")   // 🔥 IMPORTANT
-@EqualsAndHashCode(exclude = "client")
 public class Project {
 
     @Id
@@ -22,14 +20,15 @@ public class Project {
     private String projectIdentifier;
 
     @Enumerated(EnumType.STRING)
-    private ProjectStatus status = ProjectStatus.ACTIVE; // ACTIVE or INACTIVE
+    private ProjectStatus status = ProjectStatus.ACTIVE;
 
-    private Long counts = 0L;
+    private Long complete = 0L;
 
-    @ManyToOne(fetch = FetchType.LAZY)  // Use LAZY to prevent circular loading
-    @JoinColumn(name = "client_id")
-    @JsonIgnoreProperties("projects")  // Break the infinite recursion
-    private Client client;
+    private Long terminate = 0L;
+
+    private Long quotafull = 0L;
+
+    private Long securityTerminate = 0L;
 
     @ElementCollection
     @CollectionTable(name = "project_country_links", joinColumns = @JoinColumn(name = "project_id"))
@@ -39,6 +38,13 @@ public class Project {
     @CollectionTable(name = "project_vendors_username", joinColumns = @JoinColumn(name = "project_id"))
     @Column(name = "vendor_username")
     private List<String> vendorsUsername;
+
+    private String loi;
+    private String ir;
+    private String quota;
+    private Long counts;
+
+    private String cpi;
 
     @Column(name = "created_at", updatable = false, nullable = false)
     private LocalDateTime createdAt;
