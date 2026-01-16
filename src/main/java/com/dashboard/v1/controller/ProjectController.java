@@ -279,4 +279,79 @@ public class ProjectController {
 
     }
 
+    // ✅ Update project counts by projectId
+    @GetMapping("/counts/update/{projectId}")
+    @Transactional
+    public ResponseEntity<?> updateProjectCounts(
+            @PathVariable String projectId,
+            @RequestParam Long counts) {
+        logger.info("inside ProjectController /counts/update/{projectId} projectId: {}, new counts: {}", projectId, counts);
+
+        try {
+            // Validate counts is not negative
+            if (counts < 0) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Collections.singletonMap("error", "Counts cannot be negative"));
+            }
+
+            Optional<Project> optionalProject = projectRepository.findByProjectIdentifierWithoutClient(projectId);
+
+            if (optionalProject.isPresent()) {
+                Project project = optionalProject.get();
+
+                // Set the counts from request parameter
+                project.setCounts(counts);
+                projectRepository.save(project);
+
+                logger.info("Project counts updated: {} - New counts: {}", projectId, counts);
+
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", true);
+                response.put("counts", counts);
+                response.put("message", "Project counts updated successfully");
+                return ResponseEntity.ok(response);
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Collections.singletonMap("error", "Project not found"));
+            }
+        } catch (Exception e) {
+            logger.error("Error updating project counts for projectId: {}", projectId, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Collections.singletonMap("error", "Failed to update project counts: " + e.getMessage()));
+        }
+    }
+
+    // ✅ Delete project by projectId
+    @DeleteMapping("/delete/{projectId}")
+    @Transactional
+    public ResponseEntity<?> deleteProject(@PathVariable String projectId) {
+        logger.info("inside ProjectController /delete/{projectId} projectId: {}", projectId);
+
+        try {
+            Optional<Project> optionalProject = projectRepository.findByProjectIdentifier(projectId);
+
+            if (optionalProject.isPresent()) {
+                Project project = optionalProject.get();
+
+                // Delete the project
+                projectRepository.delete(project);
+
+                logger.info("Project deleted successfully: {}", projectId);
+
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", true);
+                response.put("message", "Project deleted successfully");
+                response.put("projectId", projectId);
+                return ResponseEntity.ok(response);
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Collections.singletonMap("error", "Project not found"));
+            }
+        } catch (Exception e) {
+            logger.error("Error deleting project for projectId: {}", projectId, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Collections.singletonMap("error", "Failed to delete project: " + e.getMessage()));
+        }
+    }
+
 }

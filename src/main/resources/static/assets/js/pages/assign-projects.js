@@ -98,15 +98,91 @@ document.addEventListener("DOMContentLoaded", function () {
             },
             body: JSON.stringify(requestBody)
         })
-        .then(response => response.text())
+        .then(response => {
+            // Handle authentication errors
+            if (response.status === 401) {
+                document.getElementById("loader").style.display = "none";
+                alert("Session expired. Please log in again.");
+                localStorage.removeItem('jwtToken');
+                window.location.href = "/login";
+                return null; // Stop further processing
+            }
+
+            // Handle forbidden/permission errors
+            if (response.status === 403) {
+                document.getElementById("loader").style.display = "none";
+                alert("You don't have permission to assign projects.");
+                throw new Error("Permission denied");
+            }
+
+            // Handle not found errors
+            if (response.status === 404) {
+                document.getElementById("loader").style.display = "none";
+                alert("Endpoint not found. Please contact support.");
+                throw new Error("API endpoint not found");
+            }
+
+            // Handle server errors
+            if (response.status >= 500) {
+                document.getElementById("loader").style.display = "none";
+                alert("Server error occurred. Please try again later.");
+                throw new Error(`Server error: ${response.status}`);
+            }
+
+            // Handle bad request
+            if (response.status === 400) {
+                return response.text().then(text => {
+                    document.getElementById("loader").style.display = "none";
+                    alert(`Invalid request: ${text}`);
+                    throw new Error("Bad request");
+                });
+            }
+
+            // Handle other non-OK responses
+            if (!response.ok) {
+                return response.text().then(text => {
+                    document.getElementById("loader").style.display = "none";
+                    alert(`Error: ${text || 'Unknown error occurred'}`);
+                    throw new Error(`HTTP ${response.status}: ${text}`);
+                });
+            }
+
+            // Success - parse response
+            return response.text();
+        })
         .then(message => {
-            alert(message);
+            if (message === null) {
+                // Handled redirect (e.g., 401), do nothing
+                return;
+            }
+
+            // Success response
             document.getElementById("loader").style.display = "none";
-            location.reload(); // Reload to refresh project list
+            alert(message || "Projects assigned successfully!");
+
+            // Reset form
+            $('#vendors').val(null).trigger('change');
+            $('#projects').val(null).trigger('change');
+
+            // Reload to refresh project list
+            setTimeout(() => {
+                location.reload();
+            }, 500); // Small delay to ensure user sees the success message
         })
         .catch(error => {
+            // Handle network errors and any other exceptions
             console.error('Error assigning projects:', error);
             document.getElementById("loader").style.display = "none";
+
+            // Check if it's a network error
+            if (error.message === 'Failed to fetch' || error.name === 'TypeError') {
+                alert("Network error. Please check your internet connection and try again.");
+            } else if (!error.message.includes('Permission denied') &&
+                       !error.message.includes('Bad request') &&
+                       !error.message.includes('Server error')) {
+                // Only show generic error if we haven't already shown a specific one
+                alert("An unexpected error occurred. Please try again.");
+            }
         });
     });
 });

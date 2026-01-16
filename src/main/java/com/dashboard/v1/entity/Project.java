@@ -1,6 +1,5 @@
 package com.dashboard.v1.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
 
 import javax.persistence.*;
@@ -41,7 +40,11 @@ public class Project {
 
     private String loi;
     private String ir;
+
+    @Lob
+    @Column(length = 100000)
     private String quota;
+
     private Long counts;
 
     private String cpi;

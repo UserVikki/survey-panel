@@ -28,4 +28,7 @@ public interface SurveyResponseRepository extends JpaRepository<SurveyResponse, 
     @Query("SELECT s FROM SurveyResponse s WHERE s.ipAddress = :ipAddress AND s.projectId = :projectId")
     List<SurveyResponse> findByIpAddress(String ipAddress, String projectId);
 
+    @Query("SELECT s FROM SurveyResponse s order by s.startTime desc")
+    List<SurveyResponse> findAllOrderByCreatedAt();
+
 }

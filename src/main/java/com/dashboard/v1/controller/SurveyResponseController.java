@@ -124,7 +124,7 @@ public class SurveyResponseController {
 
     @GetMapping("/api/survey-responses/all")
     public List<SurveyResponse> getAllSurveyResponses() {
-        return surveyResponseRepository.findAll();
+        return surveyResponseRepository.findAllOrderByCreatedAt();
     }
 
     private String getVendorApiUrl(User vendor, SurveyStatus status) {
