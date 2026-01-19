@@ -35,7 +35,7 @@ pipeline {
                 echo '🚀 Running test deployment...'
                 sh 'echo "This is where your deployment commands would go"'
                 sh 'echo "Example: scp, ssh, docker deploy, etc."'
-                echo '✅ Test deployment completed!'
+                echo ' Test deployment completed!'
             }
         }
     }
