@@ -26,7 +26,7 @@ pipeline {
                 echo '🔨 Running test build...'
                 sh 'echo "This is where your build commands would go"'
                 sh 'echo "Example: mvn clean install, npm install, etc."'
-                echo '✅ Test build completed!'
+                echo 'Test build completed!'
             }
         }
 
