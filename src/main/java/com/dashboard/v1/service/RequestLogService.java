@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.servlet.http.HttpServletRequest;
@@ -24,32 +25,64 @@ public class RequestLogService {
 
     /**
      * Log request asynchronously to avoid blocking main request processing
+     * Uses REQUIRES_NEW propagation to ensure logging runs in its own transaction
+     * and is not affected by parent transaction rollbacks
+     *
+     * @param requestId Unique request identifier
+     * @param method HTTP method (GET, POST, etc.)
+     * @param endpoint Request URI
+     * @param userAgent User-Agent header
+     * @param ipAddress Client IP address
+     * @param username Authenticated username (can be null)
+     * @param requestBody Request body (can be null)
      */
     @Async
-    @Transactional
-    public void logRequest(String requestId, HttpServletRequest request, String username, String requestBody) {
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void logRequest(String requestId, String method, String endpoint,
+                          String userAgent, String ipAddress, String username, String requestBody) {
         try {
             RequestLog log = new RequestLog();
             log.setRequestId(requestId != null ? requestId : generateRequestId());
-            log.setMethod(request.getMethod());
-            log.setEndpoint(request.getRequestURI());
-            log.setUserAgent(request.getHeader("User-Agent"));
-            log.setIpAddress(getClientIpAddress(request));
+            log.setMethod(method != null ? method : "UNKNOWN");
+            log.setEndpoint(endpoint != null ? endpoint : "/unknown");
+            log.setUserAgent(userAgent);
+            log.setIpAddress(ipAddress);
             log.setUsername(username);
             log.setRequestBody(requestBody);
 
             requestLogRepository.save(log);
-            logger.debug("Request logged: {} {} - {}", request.getMethod(), request.getRequestURI(), log.getRequestId());
+            logger.debug("Request logged: {} {} - {}", method, endpoint, log.getRequestId());
         } catch (Exception e) {
-            logger.error("Failed to log request", e);
+            logger.error("Failed to log request: {} {} - {}", method, endpoint, e.getMessage());
+        }
+    }
+
+    /**
+     * Helper method to extract request data and call async logging
+     * This ensures all data is extracted before async execution
+     */
+    public void logRequestFromHttpServletRequest(String requestId, HttpServletRequest request,
+                                                  String username, String requestBody) {
+        try {
+            String method = request.getMethod();
+            String endpoint = request.getRequestURI();
+            String userAgent = request.getHeader("User-Agent");
+            String ipAddress = getClientIpAddress(request);
+
+            // Call the async method with pre-extracted data
+            logRequest(requestId, method, endpoint, userAgent, ipAddress, username, requestBody);
+        } catch (Exception e) {
+            logger.error("Failed to extract request data for logging", e);
         }
     }
 
     /**
      * Update request log with response status and completion time
+     * Uses REQUIRES_NEW propagation to ensure logging runs in its own transaction
+     * and is not affected by parent transaction rollbacks
      */
     @Async
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void updateRequestLog(String requestId, Integer responseStatus, String errorMessage, Long processingTimeMs) {
         try {
             RequestLog log = requestLogRepository.findByRequestId(requestId).orElse(null);

@@ -539,12 +539,12 @@ function initializeDataTable() {
             [10, 20, 50, 100, -1],
             [10, 20, 50, 100, allText]
         ],
-        pageLength: 10,
+        pageLength: 100,
         dom: 'lfrtip',
         language: {
             search: "Search Table:",
             lengthMenu: "Show _MENU_ entries",
         },
-        order: [[0, 'asc']] // Default sort by Project ID ascending
+        order: [] // No initial sorting - preserve API order (newest projects first by createdAt DESC)
     });
 }

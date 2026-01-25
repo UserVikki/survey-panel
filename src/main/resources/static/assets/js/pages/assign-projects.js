@@ -24,6 +24,12 @@ document.addEventListener("DOMContentLoaded", function () {
         return;
     }
 
+    // Show loader while fetching data
+    const loader = document.getElementById("loader");
+    if (loader) {
+        loader.style.display = "block";
+    }
+
     fetch('/vendors-projects', {
         method: "GET",
         headers: {
@@ -33,6 +39,7 @@ document.addEventListener("DOMContentLoaded", function () {
     })
     .then(response => {
         if (response.status === 401) {
+            if (loader) loader.style.display = "none";
             alert("Session expired. Please log in again.");
             localStorage.removeItem('jwtToken');
             window.location.href = "/login";
@@ -44,8 +51,22 @@ document.addEventListener("DOMContentLoaded", function () {
         console.log("Fetched Data:", data);
         populateVendors(data.vendors);
         populateProjects(data.projects, data.vendors);
+
+        // Hide loader after data is loaded
+        if (loader) {
+            loader.style.display = "none";
+        }
     })
-    .catch(error => console.error('Error fetching vendors and projects:', error));
+    .catch(error => {
+        console.error('Error fetching vendors and projects:', error);
+
+        // Hide loader on error
+        if (loader) {
+            loader.style.display = "none";
+        }
+
+        alert("Failed to load vendors and projects. Please refresh the page.");
+    });
 
     function populateVendors(vendors) {
         let vendorSelect = document.getElementById("vendors");

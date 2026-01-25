@@ -46,25 +46,25 @@ if (!token) {
         let countryInputs = document.querySelectorAll("select[name='country[]']");
         let linkInputs = document.querySelectorAll("input[name='links[]']");
 
-        let countryValues = Array.from(countryInputs).map(input => input.value);
+        let countryValues = Array.from(countryInputs).map(input => input.value.trim());
         console.log("Countries:", countryValues);
-        let linkValues = Array.from(linkInputs).map(input => input.value);
+        let linkValues = Array.from(linkInputs).map(input => input.value.trim());
         console.log("Links:", linkValues);
 
         // Construct an array of objects containing country-link-CPI triplets
         let countryLinks = Array.from(countryInputs).map((input, index) => ({
-            country: input.value,
-            originalLink: linkInputs[index]?.value || ""
+            country: input.value.trim(),
+            originalLink: linkInputs[index]?.value.trim() || ""
         }));
 
         let formData = {
-            projectIdentifier: document.getElementById("pid").value,
-            clientUsername: document.getElementById("client").value,
-            ir: document.getElementById("ir").value,
-            loi: document.getElementById("loi").value,
-            quota: document.getElementById("quota").value,
-            counts: document.getElementById("counts").value,
-            cpi: document.getElementById("cpi").value,
+            projectIdentifier: document.getElementById("pid").value.trim(),
+            clientUsername: document.getElementById("client").value.trim(),
+            ir: document.getElementById("ir").value.trim(),
+            loi: document.getElementById("loi").value.trim(),
+            quota: document.getElementById("quota").value.trim(),
+            counts: document.getElementById("counts").value.trim(),
+            cpi: document.getElementById("cpi").value.trim(),
             countryLinks: countryLinks
         };
 

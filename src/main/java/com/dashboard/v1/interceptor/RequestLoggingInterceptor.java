@@ -9,7 +9,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.util.ContentCachingRequestWrapper;
-import org.springframework.web.util.ContentCachingResponseWrapper;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -52,8 +51,8 @@ public class RequestLoggingInterceptor implements HandlerInterceptor {
             }
         }
 
-        // Log request asynchronously
-        requestLogService.logRequest(requestId, request, username, requestBody);
+        // Log request asynchronously - extract data first to avoid null issues
+        requestLogService.logRequestFromHttpServletRequest(requestId, request, username, requestBody);
 
         logger.info("Request started: {} {} - ID: {}", request.getMethod(), request.getRequestURI(), requestId);
 

@@ -80,14 +80,23 @@ public class assignProjects {
                     .collect(Collectors.toList());
 
             vendors.forEach(vendor -> {
-                List<String> projects = vendor.getProjectsId();
+                // Get vendor's existing projects - initialize if null
+                // Must ensure this is effectively final for lambda
+                if (vendor.getProjectsId() == null) {
+                    vendor.setProjectsId(new ArrayList<>());
+                }
+                final List<String> existingProjects = vendor.getProjectsId();
+
+                // Track only NEW projects to be added
+                List<String> newProjectsToAdd = new ArrayList<>();
                 List<String> selectedProjects = request.getProjectIds();
 
                 selectedProjects.forEach(projectId -> {
                     // Use the safe query that doesn't load client (we don't need it here)
                     Optional<Project> optionalProject = projectRepository.findByProjectIdentifierWithoutClient(projectId);
 
-                    if (optionalProject.isPresent() && !projects.contains(projectId) && optionalProject.get().getStatus() == ProjectStatus.ACTIVE) {
+                    // Only add if project exists, is active, and vendor doesn't already have it
+                    if (optionalProject.isPresent() && !existingProjects.contains(projectId) && optionalProject.get().getStatus() == ProjectStatus.ACTIVE) {
                         Project project = optionalProject.get();
 
                         List<String> vendorsOfProject = project.getVendorsUsername();
@@ -99,12 +108,14 @@ public class assignProjects {
                             vendorsOfProject.add(vendor.getUsername());
                             project.setVendorsUsername(vendorsOfProject);
                             projectRepository.save(project);
-                            projects.add(projectId);
+                            // Add to NEW projects list only
+                            newProjectsToAdd.add(projectId);
                         }
                     }
                 });
 
-                vendor.getProjectsId().addAll(projects);
+                // Add only the NEW projects to vendor's existing list
+                existingProjects.addAll(newProjectsToAdd);
                 userRepository.save(vendor);
             });
 

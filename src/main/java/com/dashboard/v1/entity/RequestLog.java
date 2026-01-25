@@ -24,7 +24,7 @@ public class RequestLog {
     @Column(name = "method", nullable = false)
     private String method;
 
-    @Column(name = "endpoint", nullable = false)
+    @Column(name = "endpoint")  // Made nullable as a safety measure
     private String endpoint;
 
     @Column(name = "user_agent", columnDefinition = "TEXT")

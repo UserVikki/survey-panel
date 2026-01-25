@@ -41,6 +41,7 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         .antMatchers("/admin/login").permitAll()  // ✅ Public access to login
+                        .antMatchers("/health/**").permitAll()  // ✅ Public access to health checks
                         .antMatchers("/css/**", "/js/**", "/images/**").permitAll()
                         .antMatchers("/admin/**").authenticated() // Protect admin pages
                 )
