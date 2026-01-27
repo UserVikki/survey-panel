@@ -96,7 +96,7 @@ public class assignProjects {
                     Optional<Project> optionalProject = projectRepository.findByProjectIdentifierWithoutClient(projectId);
 
                     // Only add if project exists, is active, and vendor doesn't already have it
-                    if (optionalProject.isPresent() && !existingProjects.contains(projectId) && optionalProject.get().getStatus() == ProjectStatus.ACTIVE) {
+                    if (optionalProject.isPresent() && optionalProject.get().getStatus() == ProjectStatus.ACTIVE) {
                         Project project = optionalProject.get();
 
                         List<String> vendorsOfProject = project.getVendorsUsername();

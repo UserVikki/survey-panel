@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Survey Status</title>
+    <style>
+        .status-table {
+            position: fixed;
+            left: 50%;
+            bottom: 100px;
+            transform: translateX(-50%);
+            background: rgba(255,255,255,0.3); /* More transparent */
+            border-radius: 10px;
+            box-shadow: 0 2px 12px #0002;
+            width: 520px;
+            padding: 24px 32px;
+        }
+        .status-table th, .status-table td {
+            padding: 8px 16px;
+            text-align: left;
+        }
+        .status-table th {
+            background: #f7f7c0;
+        }
+        .status-table tr:not(:first-child) td {
+            border-top: 1px solid #eee;
+        }
+        .status-complete {
+            color: #28a745;
+            background: transparent;
+            font-weight: bold;
+        }
+        .status-terminate {
+            color: #dc3545;
+            background: transparent;
+            font-weight: bold;
+        }
+        .status-quotafull {
+            color: #007bff;
+            background: transparent;
+            font-weight: bold;
+        }
+        .status-securityterminate {
+            color: #6c757d;
+            background: transparent;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body th:style="'background: url(/assets/images/' + ${backgroundImage} + ') no-repeat center center fixed; background-size: cover; min-height: 100vh; margin: 0; font-family: Arial, sans-serif;'">
+    <table class="status-table">
+        <tr>
+            <th>UID</th>
+            <th>Project ID</th>
+            <th>Timestamp</th>
+            <th>IP Address</th>
+            <th>Status</th>
+        </tr>
+        <tr>
+            <td th:text="${uid}"></td>
+            <td th:text="${projectId}"></td>
+            <td th:text="${timestamp}"></td>
+            <td th:text="${ipAddress}"></td>
+            <td th:classappend="${status.name().toLowerCase()} == 'complete' ? 'status-complete' :
+                                (${status.name().toLowerCase()} == 'terminate' ? 'status-terminate' :
+                                (${status.name().toLowerCase()} == 'quotafull' ? 'status-quotafull' :
+                                (${status.name().toLowerCase()} == 'securityterminate' ? 'status-securityterminate' : '')))"
+                th:text="${status}"></td>
+        </tr>
+    </table>
+</body>
+</html>

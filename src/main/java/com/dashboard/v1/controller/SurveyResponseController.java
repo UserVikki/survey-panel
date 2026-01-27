@@ -18,7 +18,9 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.util.UriComponentsBuilder;
+import org.springframework.web.servlet.ModelAndView;
 
+import javax.servlet.http.HttpServletRequest;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.List;
@@ -38,36 +40,36 @@ public class SurveyResponseController {
     private final ProjectVendorService projectVendorService;
 
     @GetMapping("/complete")
-    public ResponseEntity<?> submitComplete(@RequestParam String UID) {
+    public ModelAndView submitComplete(@RequestParam String UID, HttpServletRequest request) {
         logger.info("inside SurveyResponseController /survey/complete UID : {}", UID);
-        return saveSurveyResponse(UID, SurveyStatus.COMPLETE);
+        return saveSurveyResponse(UID, SurveyStatus.COMPLETE, request);
     }
 
     @GetMapping("/terminate")
-    public ResponseEntity<?> submitTerminate(@RequestParam String UID) {
+    public ModelAndView submitTerminate(@RequestParam String UID, HttpServletRequest request) {
         logger.info("inside SurveyResponseController /survey/terminate UID : {}", UID);
-        return saveSurveyResponse(UID, SurveyStatus.TERMINATE);
+        return saveSurveyResponse(UID, SurveyStatus.TERMINATE, request);
     }
 
     @GetMapping("/quotafull")
-    public ResponseEntity<?> submitQuotaFull(@RequestParam String UID) {
+    public ModelAndView submitQuotaFull(@RequestParam String UID, HttpServletRequest request) {
         logger.info("inside SurveyResponseController /survey/quotafull UID : {}", UID);
-        return saveSurveyResponse(UID, SurveyStatus.QUOTAFULL);
+        return saveSurveyResponse(UID, SurveyStatus.QUOTAFULL, request);
     }
 
     @GetMapping("/securityTerminate")
-    public ResponseEntity<?> submitSecurityTerminate(@RequestParam String UID) {
+    public ModelAndView submitSecurityTerminate(@RequestParam String UID, HttpServletRequest request) {
         logger.info("inside SurveyResponseController /survey/securityTerminate UID : {}", UID);
-        return saveSurveyResponse(UID, SurveyStatus.SECURITYTERMINATE);
+        return saveSurveyResponse(UID, SurveyStatus.SECURITYTERMINATE, request);
     }
 
-    private ResponseEntity<?> saveSurveyResponse(String UID, SurveyStatus status) {
+    private ModelAndView saveSurveyResponse(String UID, SurveyStatus status, HttpServletRequest request) {
         // Validate the project exists.
 
         Optional<SurveyResponse> surveyResponse = surveyResponseRepository.findByUId(UID);
 
         if(!surveyResponse.isPresent()){
-            return ResponseEntity.ok("Survey response does not match with any vendor click");
+            return null;
         }
         SurveyResponse res = surveyResponse.get();
 
@@ -76,7 +78,7 @@ public class SurveyResponseController {
 
         Optional<User> vendor = userRepository.findByUsername(res.getVendorUsername());
 
-        if(!(surveyResponse.get().getStatus() == SurveyStatus.IN_PROGRESS)) return ResponseEntity.ok("THIS UID is already registered for a response ");
+        if(!(surveyResponse.get().getStatus() == SurveyStatus.IN_PROGRESS)) return null;
 
         res.setStatus(status);
         res.setEndTime(ZonedDateTime.now(ZoneId.of("Asia/Kolkata")).toLocalDateTime());
@@ -119,7 +121,40 @@ public class SurveyResponseController {
 
         projectVendorService.incrementSurveyCount(res.getVendorUsername(), res.getProjectId(), status);
 
-        return notifyVendorWithUid(vendor.get(), status, UID);
+        notifyVendorWithUid(vendor.get(), status, UID);
+
+        return renderSurveyStatusPage(UID, status, request);
+    }
+
+    private ModelAndView renderSurveyStatusPage(String UID, SurveyStatus status, HttpServletRequest request) {
+        Optional<SurveyResponse> surveyResponse = surveyResponseRepository.findByUId(UID);
+        String projectId = surveyResponse.map(SurveyResponse::getProjectId).orElse("");
+        String timestamp = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(java.time.LocalDateTime.now());
+        String ipAddress = request.getHeader("X-Forwarded-For");
+        if (ipAddress == null) ipAddress = request.getRemoteAddr();
+        String backgroundImage;
+        switch (status) {
+            case COMPLETE:
+                backgroundImage = "complete.png";
+                break;
+            case TERMINATE:
+            case SECURITYTERMINATE:
+                backgroundImage = "terminate.png";
+                break;
+            case QUOTAFULL:
+                backgroundImage = "quota-full.png";
+                break;
+            default:
+                backgroundImage = "default.png";
+        }
+        ModelAndView mav = new ModelAndView("survey-status");
+        mav.addObject("uid", UID);
+        mav.addObject("projectId", projectId);
+        mav.addObject("timestamp", timestamp);
+        mav.addObject("ipAddress", ipAddress);
+        mav.addObject("backgroundImage", backgroundImage);
+        mav.addObject("status", status);
+        return mav;
     }
 
     @GetMapping("/api/survey-responses/all")
