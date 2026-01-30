@@ -106,10 +106,6 @@ public class ProjectController {
             Project project = new Project();
             project.setProjectIdentifier(request.getProjectIdentifier());
 
-            // Generate unique token from projectIdentifier
-            String projectToken = generateProjectIdentifierToken(request.getProjectIdentifier());
-            project.setProjectIdentifierToken(projectToken);
-
             project.setCountryLinks(request.getCountryLinks());
             project.setIr(request.getIr());
             project.setCounts(request.getCounts());
@@ -134,7 +130,6 @@ public class ProjectController {
             response.put("message", "Project created successfully!");
             response.put("projectId", savedProject.getId());
             response.put("projectIdentifier", savedProject.getProjectIdentifier());
-            response.put("projectIdentifierToken", savedProject.getProjectIdentifierToken());
             response.put("clientUsername", client.getUsername());
             return ResponseEntity.ok(response);
         } catch (Exception e) {
@@ -232,7 +227,7 @@ public class ProjectController {
                 {
                     VendorLinks link = new VendorLinks();
                     link.setVendorName(vendor.getUsername());
-                    link.setLink(appProperties.getDomain() + "/survey/" + vendor.getUserToken() + "/" + countrylink.getCountry() + "?PID=" + project.get().getProjectIdentifierToken() + "&UID=111");
+                    link.setLink(appProperties.getDomain() + "/survey/" + vendor.getUserToken() + "/" + countrylink.getCountry() + "?PID=" + project.get().getProjectIdentifier() + "&UID=111");
                     vendorLinks.add(link);
                 });
 

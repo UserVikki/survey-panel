@@ -15,8 +15,6 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
 
     Optional<Project> findByProjectIdentifier(String pId);
 
-    Optional<Project> findByProjectIdentifierToken(String pId);
-
     // Fetch project without loading client relationship to avoid circular issues
     @Query("SELECT p FROM Project p WHERE p.projectIdentifier = :pId")
     Optional<Project> findByProjectIdentifierWithoutClient(@Param("pId") String pId);
