@@ -63,7 +63,7 @@ public class LinkRedirectController {
         logger.info("Received vendor click callback - uid: {}, pid: {}, token: {}, country: {}", uid, pid, token, country);
 
 
-        Optional<Project> projectOpt = projectRepository.findByProjectIdentifier(pid);
+        Optional<Project> projectOpt = projectRepository.findByProjectIdentifierToken(pid);
         if(!projectOpt.isPresent()){
             logger.warn("Project not found for pid: {}", pid);
             return ResponseEntity.status(HttpStatus.FOUND)

@@ -2,10 +2,8 @@ package com.dashboard.v1.controller;
 
 import com.dashboard.v1.AppProperties;
 import com.dashboard.v1.entity.*;
-import com.dashboard.v1.model.request.AssignProjectRequest;
 import com.dashboard.v1.model.request.CreateProjectRequest;
 import com.dashboard.v1.model.request.ProjectVendorLinksRequest;
-import com.dashboard.v1.model.response.GetVendorResponse;
 import com.dashboard.v1.model.response.ProjectTableDataResponse;
 import com.dashboard.v1.model.response.VendorLinks;
 import com.dashboard.v1.model.response.VendorProjectDetailsResponse;
@@ -22,6 +20,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import javax.transaction.Transactional;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
 @RestController
@@ -40,6 +41,34 @@ public class ProjectController {
     private final ClientRepository clientRepository;
 
     private final AppProperties appProperties;
+
+    /**
+     * Generates a unique, small token from the projectIdentifier
+     * Uses SHA-256 hash and takes first 10 characters for a short, unique token
+     *
+     * @param projectIdentifier The original project identifier
+     * @return A unique 10-character token
+     */
+    private String generateProjectIdentifierToken(String projectIdentifier) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(projectIdentifier.getBytes(StandardCharsets.UTF_8));
+
+            // Convert to hexadecimal and take first 10 characters
+            StringBuilder hexString = new StringBuilder();
+            for (int i = 0; i < Math.min(5, hash.length); i++) {
+                String hex = Integer.toHexString(0xff & hash[i]);
+                if (hex.length() == 1) hexString.append('0');
+                hexString.append(hex);
+            }
+
+            return hexString.toString().toLowerCase();
+        } catch (NoSuchAlgorithmException e) {
+            logger.error("Error generating project identifier token", e);
+            // Fallback: use UUID-based token if SHA-256 fails
+            return UUID.randomUUID().toString().substring(0, 10).replace("-", "");
+        }
+    }
 
     @PostMapping("/create/project")
     @PreAuthorize("hasRole('ADMIN')")
@@ -76,6 +105,11 @@ public class ProjectController {
             // Create new project
             Project project = new Project();
             project.setProjectIdentifier(request.getProjectIdentifier());
+
+            // Generate unique token from projectIdentifier
+            String projectToken = generateProjectIdentifierToken(request.getProjectIdentifier());
+            project.setProjectIdentifierToken(projectToken);
+
             project.setCountryLinks(request.getCountryLinks());
             project.setIr(request.getIr());
             project.setCounts(request.getCounts());
@@ -100,6 +134,7 @@ public class ProjectController {
             response.put("message", "Project created successfully!");
             response.put("projectId", savedProject.getId());
             response.put("projectIdentifier", savedProject.getProjectIdentifier());
+            response.put("projectIdentifierToken", savedProject.getProjectIdentifierToken());
             response.put("clientUsername", client.getUsername());
             return ResponseEntity.ok(response);
         } catch (Exception e) {
@@ -197,7 +232,7 @@ public class ProjectController {
                 {
                     VendorLinks link = new VendorLinks();
                     link.setVendorName(vendor.getUsername());
-                    link.setLink(appProperties.getDomain() + "/survey/" + vendor.getUserToken() + "/" + countrylink.getCountry() + "?PID=" + project.get().getProjectIdentifier() + "&UID=111");
+                    link.setLink(appProperties.getDomain() + "/survey/" + vendor.getUserToken() + "/" + countrylink.getCountry() + "?PID=" + project.get().getProjectIdentifierToken() + "&UID=111");
                     vendorLinks.add(link);
                 });
 

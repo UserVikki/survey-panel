@@ -5,6 +5,7 @@ import com.dashboard.v1.repository.ProjectRepository;
 import com.dashboard.v1.repository.SurveyResponseRepository;
 import com.dashboard.v1.repository.UserRepository;
 import com.dashboard.v1.service.ProjectVendorService;
+import com.dashboard.v1.service.RequestLogService;
 import com.dashboard.v1.util.SslUtil;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -26,6 +27,8 @@ import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Optional;
 
+import static com.dashboard.v1.entity.SurveyStatus.SECURITYTERMINATE;
+
 @RestController
 @RequestMapping("/survey")
 @RequiredArgsConstructor
@@ -38,6 +41,7 @@ public class SurveyResponseController {
     private final UserRepository userRepository;
     private final RestTemplate restTemplate;
     private final ProjectVendorService projectVendorService;
+    private final RequestLogService requestLogService;
 
     @GetMapping("/complete")
     public ModelAndView submitComplete(@RequestParam String UID, HttpServletRequest request) {
@@ -60,7 +64,7 @@ public class SurveyResponseController {
     @GetMapping("/securityTerminate")
     public ModelAndView submitSecurityTerminate(@RequestParam String UID, HttpServletRequest request) {
         logger.info("inside SurveyResponseController /survey/securityTerminate UID : {}", UID);
-        return saveSurveyResponse(UID, SurveyStatus.SECURITYTERMINATE, request);
+        return saveSurveyResponse(UID, SECURITYTERMINATE, request);
     }
 
     private ModelAndView saveSurveyResponse(String UID, SurveyStatus status, HttpServletRequest request) {
@@ -83,6 +87,14 @@ public class SurveyResponseController {
         res.setStatus(status);
         res.setEndTime(ZonedDateTime.now(ZoneId.of("Asia/Kolkata")).toLocalDateTime());
         surveyResponseRepository.save(res);
+
+        // check for ip address change
+        String ipAddress = requestLogService.getClientIpAddress(request);
+
+        if(!res.getIpAddress().equals(ipAddress)){
+            status = SECURITYTERMINATE;
+            logger.info("IP address changed for UID {}: original {}, new {}", UID, res.getIpAddress(), ipAddress);
+        }
 
         // Update project counts based on survey status
         switch (status) {
