@@ -73,12 +73,6 @@ function populateTable(projects) {
     projects.forEach(project => {
         let row = document.createElement("tr");
 
-        // Store vendorsUsername and project details as data attributes for later use
-        if (project.vendorsUsername && Array.isArray(project.vendorsUsername)) {
-            row.setAttribute('data-vendors', JSON.stringify(project.vendorsUsername));
-        } else {
-            row.setAttribute('data-vendors', '[]');
-        }
 
         // Store LOI, IR, Quota for the details modal
         row.setAttribute('data-loi', project.loi || 'N/A');
@@ -462,9 +456,6 @@ document.addEventListener('click', function (event) {
         const row = event.target.closest('tr');
         const projectId = row.children[0].innerText;
 
-        // Get vendorsUsername from the data attribute
-        const vendorsUsername = JSON.parse(row.getAttribute('data-vendors') || '[]');
-
         // Fetch vendor list for the project
         fetch('/projects/vendor-list', {
             method: "POST",
@@ -473,8 +464,7 @@ document.addEventListener('click', function (event) {
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                projectId: projectId,
-                vendorIds: vendorsUsername
+                projectId: projectId
             })
         })
         .then(response => {

@@ -105,7 +105,7 @@ public class ProjectController {
             // Create new project
             Project project = new Project();
             project.setProjectIdentifier(request.getProjectIdentifier());
-
+            project.setProjectIdentifierToken(generateProjectIdentifierToken(request.getProjectIdentifier()));
             project.setCountryLinks(request.getCountryLinks());
             project.setIr(request.getIr());
             project.setCounts(request.getCounts());
@@ -212,7 +212,7 @@ public class ProjectController {
 
             List<VendorLinks> vendorLinks = new ArrayList<>();
 
-            List<String> vendorIds = request.getVendorIds();
+            List<String> vendorIds = project.get().getVendorsUsername();
 
             vendorIds.forEach(vendorId -> {
                 Optional<User> vendorOptional = userRepository.findByUsername(vendorId);
@@ -226,8 +226,15 @@ public class ProjectController {
                 project.get().getCountryLinks().forEach(countrylink ->
                 {
                     VendorLinks link = new VendorLinks();
+                    String pidToken = project.get().getProjectIdentifierToken();
+                    if(pidToken == null || pidToken.isEmpty()) {
+                        // Generate and set token if not present
+                        pidToken = generateProjectIdentifierToken(project.get().getProjectIdentifier());
+                        project.get().setProjectIdentifierToken(pidToken);
+                        projectRepository.save(project.get());
+                    }
                     link.setVendorName(vendor.getUsername());
-                    link.setLink(appProperties.getDomain() + "/survey/" + vendor.getUserToken() + "/" + countrylink.getCountry() + "?PID=" + project.get().getProjectIdentifier() + "&UID=111");
+                    link.setLink(appProperties.getDomain() + "/survey/" + vendor.getUserToken() + "/" + countrylink.getCountry() + "?PID=" + project.get().getProjectIdentifierToken() + "&UID=111");
                     vendorLinks.add(link);
                 });
 

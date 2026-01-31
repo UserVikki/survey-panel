@@ -63,7 +63,7 @@ public class LinkRedirectController {
         logger.info("Received vendor click callback - uid: {}, pid: {}, token: {}, country: {}", uid, pid, token, country);
 
 
-        Optional<Project> projectOpt = projectRepository.findByProjectIdentifier(pid);
+        Optional<Project> projectOpt = projectRepository.findByProjectIdentifierToken(pid);
         if(!projectOpt.isPresent()){
             logger.warn("Project not found for pid: {}", pid);
             return ResponseEntity.status(HttpStatus.FOUND)
@@ -131,9 +131,9 @@ public class LinkRedirectController {
         logger.debug("Country verification passed");
 
         // Step 6: Check if IP already attempted this survey
-        logger.debug("Step 6: Checking if IP {} already attempted survey for project: {}", ip, pid);
-        List<SurveyResponse> matchingIpSurveys = surveyResponseRepository.findByIpAddress(ip, pid);
-        logger.debug("Found {} surveys from this IP for project: {}", matchingIpSurveys.size(), pid);
+        logger.debug("Step 6: Checking if IP {} already attempted survey for project: {}", ip, projectOpt.get().getProjectIdentifier());
+        List<SurveyResponse> matchingIpSurveys = surveyResponseRepository.findByIpAddress(ip, projectOpt.get().getProjectIdentifier());
+        logger.debug("Found {} surveys from this IP for project: {}", matchingIpSurveys.size(), projectOpt.get().getProjectIdentifier());
 
         if (!matchingIpSurveys.isEmpty()) {
             logger.warn("Survey already attempted by IP: {} for project: {}", ip, pid);
@@ -148,7 +148,7 @@ public class LinkRedirectController {
         logger.info("Step 7: Creating new survey response - uid: {}, pid: {}, ip: {}", uid, pid, ip);
         SurveyResponse newResponse = new SurveyResponse();
         newResponse.setUId(uid);
-        newResponse.setProjectId(pid);
+        newResponse.setProjectId(projectOpt.get().getProjectIdentifier());
         newResponse.setStartTime(ZonedDateTime.now(ZoneId.of("Asia/Kolkata")).toLocalDateTime());
         newResponse.setIpAddress(ip);
         logger.debug("Survey start time set to: {}", ZonedDateTime.now(ZoneId.of("Asia/Kolkata")).toLocalDateTime());

@@ -18,6 +18,9 @@ public class Project {
     @Column(nullable = false, unique = true)
     private String projectIdentifier;
 
+    @Column(nullable = false, unique = true)
+    private String projectIdentifierToken;
+
     @Enumerated(EnumType.STRING)
     private ProjectStatus status = ProjectStatus.ACTIVE;
 
