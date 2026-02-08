@@ -222,7 +222,7 @@ public class AdminController {
                 {
                     CountryLink link = new CountryLink();
                     link.setCountry(countrylink.getCountry());
-                    link.setOriginalLink(appProperties.getDomain()+"/survey/"+ vendor.getUserToken() +"/"+countrylink.getCountry()+"?PID="+projectId+"&UID=111");
+                    link.setOriginalLink(appProperties.getDomain()+"/survey/"+ vendor.getUserToken() +"/"+countrylink.getCountry()+"?PID="+project.get().getProjectIdentifierToken()+"&UID=111");
                     links.add(link);
                 });
                 getVendorResponse.setLinks(links);

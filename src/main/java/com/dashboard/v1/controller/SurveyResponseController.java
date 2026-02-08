@@ -84,10 +84,6 @@ public class SurveyResponseController {
 
         if(!(surveyResponse.get().getStatus() == SurveyStatus.IN_PROGRESS)) return null;
 
-        res.setStatus(status);
-        res.setEndTime(ZonedDateTime.now(ZoneId.of("Asia/Kolkata")).toLocalDateTime());
-        surveyResponseRepository.save(res);
-
         // check for ip address change
         String ipAddress = requestLogService.getClientIpAddress(request);
 
@@ -95,6 +91,10 @@ public class SurveyResponseController {
             status = SECURITYTERMINATE;
             logger.info("IP address changed for UID {}: original {}, new {}", UID, res.getIpAddress(), ipAddress);
         }
+
+        res.setStatus(status);
+        res.setEndTime(ZonedDateTime.now(ZoneId.of("Asia/Kolkata")).toLocalDateTime());
+        surveyResponseRepository.save(res);
 
         // Update project counts based on survey status
         switch (status) {

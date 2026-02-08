@@ -34,14 +34,6 @@
     <script src="/assets/js/auth-check.js"></script>
 
     <style>
-        .btn-filter-status {
-            margin: 0 5px;
-        }
-        .btn-filter-status.active {
-            background-color: #556ee6 !important;
-            color: white !important;
-            border-color: #556ee6 !important;
-        }
         .dataTables_wrapper .dt-buttons {
             display: flex;
             align-items: center;
@@ -73,6 +65,21 @@
         .date-filter-container button {
             padding: 4px 12px;
             font-size: 13px;
+        }
+        .btn-group .dropdown-toggle {
+            white-space: nowrap;
+        }
+        .dropdown-menu {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .dropdown-item:hover {
+            background-color: #556ee6;
+            color: white;
+        }
+        .dropdown-item.active {
+            background-color: #556ee6;
+            color: white;
         }
     </style>
 </head>
@@ -395,7 +402,7 @@
     </script>
 
     <!-- Dashboard page JavaScript -->
-    <script src="/assets/js/pages/dashboard.js?v=6.0"></script>
+    <script src="/assets/js/pages/dashboard.js"></script>
 
 </body>
 
