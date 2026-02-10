@@ -81,6 +81,35 @@
             background-color: #556ee6;
             color: white;
         }
+
+        .custom-dropdown ul {
+            padding: 6px 0;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .custom-dropdown .dropdown-item {
+            padding: 10px 14px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .custom-dropdown .dropdown-item:hover {
+            background-color: #556ee6;
+            color: #fff;
+        }
+
+        .custom-dropdown .dropdown-item:active {
+            background-color: #4458c9;
+        }
+
+        #statusDropdownBtn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
     </style>
 </head>
 
@@ -295,6 +324,51 @@
                 <div class="container-fluid">
                     <div class="row">
                         <div class="col-md-12">
+
+                            <!-- ================= FILTER BAR ================= -->
+                            <div class="row mb-3">
+                                <div class="col-md-12 d-flex flex-wrap align-items-center gap-2">
+
+                                    <!-- Excel Export -->
+                                    <button id="exportExcelBtn" class="btn btn-success btn-sm">
+                                        Export Excel
+                                    </button>
+
+                                    <!-- Status Filter Dropdown -->
+                                    <div class="custom-dropdown position-relative">
+                                        <button type="button" class="btn btn-primary btn-sm" id="statusDropdownBtn">
+                                            <span id="filterLabel">Filter by Status: ALL</span> ▼
+                                        </button>
+
+                                        <ul id="statusDropdownMenu"
+                                            style="display:none; position:absolute; z-index:1000; background:#fff;
+                       border:1px solid #ddd; list-style:none; padding:0; margin-top:5px;
+                       min-width:200px; border-radius:4px; box-shadow:0 2px 8px rgba(0,0,0,.15);">
+
+                                            <li><a href="#" class="status-filter-option dropdown-item" data-status="">ALL</a></li>
+                                            <li><a href="#" class="status-filter-option dropdown-item" data-status="COMPLETE">COMPLETE</a></li>
+                                            <li><a href="#" class="status-filter-option dropdown-item" data-status="TERMINATE">TERMINATE</a></li>
+                                            <li><a href="#" class="status-filter-option dropdown-item" data-status="QUOTAFULL">QUOTAFULL</a></li>
+                                            <li><a href="#" class="status-filter-option dropdown-item" data-status="SECURITYTERMINATE">SECURITYTERMINATE</a></li>
+                                        </ul>
+                                    </div>
+
+                                    <!-- Date Range Filter -->
+                                    <div class="d-flex align-items-center gap-1">
+                                        <label class="mb-0">From</label>
+                                        <input type="date" id="startDateFilter" class="form-control form-control-sm">
+
+                                        <label class="mb-0">To</label>
+                                        <input type="date" id="endDateFilter" class="form-control form-control-sm">
+
+                                        <button id="clearDateFilter" class="btn btn-secondary btn-sm">
+                                            Clear
+                                        </button>
+                                    </div>
+
+                                </div>
+                            </div>
+                            <!-- ================= END FILTER BAR ================= -->
 
                             <table id="example" class="table table-striped table-bordered" style="width:100%">
                                 <thead>
