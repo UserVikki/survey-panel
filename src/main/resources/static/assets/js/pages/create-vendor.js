@@ -2,13 +2,54 @@
 
 const token = localStorage.getItem("jwtToken");
 if (!token) {
-    window.location.href = "/login";  // Redirect if not logged in
+    window.location.href = "/login"; // Redirect if not logged in
 } else {
+
     document.addEventListener("DOMContentLoaded", function () {
+
+        const urlFieldIds = [
+            "completed",
+            "terminated",
+            "quota",
+            "securityTerminate"
+        ];
+
+        function isValidHttpsUrl(value) {
+            return value && value.startsWith("https://");
+        }
+
+        // Live validation while typing
+        urlFieldIds.forEach(id => {
+            const input = document.getElementById(id);
+            input.addEventListener("input", () => {
+                if (isValidHttpsUrl(input.value)) {
+                    input.classList.remove("is-invalid");
+                } else {
+                    input.classList.add("is-invalid");
+                }
+            });
+        });
+
         document.getElementById("addForm").addEventListener("submit", function (event) {
             event.preventDefault(); // Prevent default form submission
 
-            // Show loader
+            let hasError = false;
+
+            // Validate URLs before submit
+            urlFieldIds.forEach(id => {
+                const input = document.getElementById(id);
+                if (!isValidHttpsUrl(input.value)) {
+                    input.classList.add("is-invalid");
+                    hasError = true;
+                }
+            });
+
+            if (hasError) {
+                alert("Please enter valid HTTPS URLs (must start with https://)");
+                return; // ❌ Stop API call
+            }
+
+            // Show loader only if validation passes
             document.getElementById("loader").style.display = "block";
 
             // Collect form data
@@ -27,14 +68,14 @@ if (!token) {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "Authorization": "Bearer " + token,  // Add JWT token
+                    "Authorization": "Bearer " + token
                 },
                 body: JSON.stringify(formData)
             })
             .then(response => {
                 if (response.status === 401) {
                     alert("Session expired. Please log in again.");
-                    localStorage.removeItem('jwtToken');
+                    localStorage.removeItem("jwtToken");
                     window.location.href = "/login";
                     return;
                 }
@@ -43,17 +84,20 @@ if (!token) {
             .then(data => {
                 console.log("Success:", data);
                 alert("Vendor added successfully!");
-                document.getElementById("addForm").reset(); // Reset form
+                document.getElementById("addForm").reset();
+
+                // Remove validation styles after reset
+                urlFieldIds.forEach(id => {
+                    document.getElementById(id).classList.remove("is-invalid");
+                });
             })
             .catch(error => {
                 console.error("Error:", error);
-                alert("vendor already exist. Please try again with a different vendor username.");
+                alert("Vendor already exists. Please try again with a different vendor username.");
             })
             .finally(() => {
-                // Hide loader
                 document.getElementById("loader").style.display = "none";
             });
         });
     });
 }
-
