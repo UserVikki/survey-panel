@@ -15,7 +15,11 @@ if (!token) {
         ];
 
         function isValidHttpsUrl(value) {
-            return value && value.startsWith("https://");
+            return (
+                value &&
+                value.startsWith("https://") &&
+                value.includes("=[AMI]")
+            );
         }
 
         // Live validation while typing
