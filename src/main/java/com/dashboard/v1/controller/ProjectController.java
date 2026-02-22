@@ -9,6 +9,7 @@ import com.dashboard.v1.model.response.VendorLinks;
 import com.dashboard.v1.model.response.VendorProjectDetailsResponse;
 import com.dashboard.v1.repository.ClientRepository;
 import com.dashboard.v1.repository.ProjectRepository;
+import com.dashboard.v1.repository.SecurityTerminateFlagRepository;
 import com.dashboard.v1.repository.UserRepository;
 import com.dashboard.v1.service.VendorProjectDetailsService;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +34,8 @@ public class ProjectController {
     private static final Logger logger = LoggerFactory.getLogger(ProjectController.class);
 
     private final ProjectRepository projectRepository;
+
+    private final SecurityTerminateFlagRepository securityTerminateFlagRepository;
 
     private final UserRepository userRepository;
 
@@ -115,6 +118,13 @@ public class ProjectController {
 
             // Save the project first (this will set the client_id foreign key)
             Project savedProject = projectRepository.save(project);
+
+            SecurityTerminateFlag securityTerminateFlag = new SecurityTerminateFlag();
+            securityTerminateFlag.setProjectId(request.getProjectIdentifier());
+            securityTerminateFlag.setFlag(request.getSecurityTerminateFlag());
+
+            securityTerminateFlagRepository.save(securityTerminateFlag);
+
 
             // Update the client's projects list (inverse side of relationship)
             if (client.getProjects() == null) {

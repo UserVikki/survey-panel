@@ -21,4 +21,5 @@ public class CreateProjectRequest {
     private String quota;
     private List<CountryLink> countryLinks;
     private String clientUsername;
+    private Boolean securityTerminateFlag;
 }

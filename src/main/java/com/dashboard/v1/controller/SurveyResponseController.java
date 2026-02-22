@@ -2,6 +2,7 @@ package com.dashboard.v1.controller;
 
 import com.dashboard.v1.entity.*;
 import com.dashboard.v1.repository.ProjectRepository;
+import com.dashboard.v1.repository.SecurityTerminateFlagRepository;
 import com.dashboard.v1.repository.SurveyResponseRepository;
 import com.dashboard.v1.repository.UserRepository;
 import com.dashboard.v1.service.ProjectVendorService;
@@ -38,6 +39,7 @@ public class SurveyResponseController {
 
     private final SurveyResponseRepository surveyResponseRepository;
     private final ProjectRepository projectRepository;
+    private final SecurityTerminateFlagRepository securityTerminateFlagRepository;
     private final UserRepository userRepository;
     private final RestTemplate restTemplate;
     private final ProjectVendorService projectVendorService;
@@ -80,6 +82,7 @@ public class SurveyResponseController {
         Project project = projectRepository.findByProjectIdentifier(surveyResponse.get().getProjectId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Project not found"));
 
+        SecurityTerminateFlag flag = securityTerminateFlagRepository.findByProjectId(project.getProjectIdentifier());
         Optional<User> vendor = userRepository.findByUsername(res.getVendorUsername());
 
         if(!(surveyResponse.get().getStatus() == SurveyStatus.IN_PROGRESS)) return null;
@@ -87,7 +90,7 @@ public class SurveyResponseController {
         // check for ip address change
         String ipAddress = requestLogService.getClientIpAddress(request);
 
-        if(!res.getIpAddress().equals(ipAddress)){
+        if(!res.getIpAddress().equals(ipAddress) && flag != null && flag.getFlag()){
             status = SECURITYTERMINATE;
             logger.info("IP address changed for UID {}: original {}, new {}", UID, res.getIpAddress(), ipAddress);
         }

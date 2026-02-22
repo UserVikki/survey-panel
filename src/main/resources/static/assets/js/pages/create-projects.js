@@ -1,5 +1,17 @@
 // Create Projects Page JavaScript
 
+// Security Terminate toggle switch handler
+$(document).ready(function() {
+    // Update the status text when the switch is toggled
+    $('#securityTerminate').on('change', function() {
+        if ($(this).is(':checked')) {
+            $('#securityTerminateStatus').text('On');
+        } else {
+            $('#securityTerminateStatus').text('Off');
+        }
+    });
+});
+
 // Dynamic field addition
 $(document).ready(function(){
     $(".add").click(function () {
@@ -65,6 +77,7 @@ if (!token) {
             quota: document.getElementById("quota").value.trim(),
             counts: document.getElementById("counts").value.trim(),
             cpi: document.getElementById("cpi").value.trim(),
+            securityTerminate: document.getElementById("securityTerminate").checked,
             countryLinks: countryLinks
         };
 
