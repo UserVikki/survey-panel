@@ -16,6 +16,7 @@ let allRows = [];
 let activeStatusFilter = '';
 let activeStartDate = null;
 let activeEndDate = null;
+let activeSearchQuery = '';
 
 /* =======================
    DATE UTILITIES
@@ -123,6 +124,22 @@ function fetchSurveyResponses() {
 function applyFiltersAndRender() {
     let rows = [...allRows];
 
+    // Search filter
+    if (activeSearchQuery) {
+        const query = activeSearchQuery.toLowerCase();
+        rows = rows.filter(r => {
+            return (
+                r.projectId.toString().toLowerCase().includes(query) ||
+                r.uid.toString().toLowerCase().includes(query) ||
+                r.status.toLowerCase().includes(query) ||
+                r.startTime.toLowerCase().includes(query) ||
+                r.endTime.toLowerCase().includes(query) ||
+                r.ip.toLowerCase().includes(query) ||
+                r.country.toLowerCase().includes(query)
+            );
+        });
+    }
+
     // Status filter
     if (activeStatusFilter) {
         rows = rows.filter(r => r.status === activeStatusFilter);
@@ -228,6 +245,26 @@ document.addEventListener('click', e => {
         activeEndDate = null;
         document.getElementById('startDateFilter').value = '';
         document.getElementById('endDateFilter').value = '';
+        applyFiltersAndRender();
+    }
+});
+
+// Search input
+document.addEventListener('input', e => {
+    if (e.target.id === 'searchInput') {
+        activeSearchQuery = e.target.value.trim();
+        applyFiltersAndRender();
+    }
+});
+
+// Clear search
+document.addEventListener('click', e => {
+    if (e.target.id === 'clearSearchBtn') {
+        activeSearchQuery = '';
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) {
+            searchInput.value = '';
+        }
         applyFiltersAndRender();
     }
 });

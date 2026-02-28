@@ -122,5 +122,10 @@ public class PageController {
         return "show-redirects";
     }
 
+    @GetMapping("/analytics")
+    public String analytics() {
+        return "analytics-dashboard";
+    }
+
 
 }
