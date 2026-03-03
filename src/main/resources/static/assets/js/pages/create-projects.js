@@ -77,7 +77,7 @@ if (!token) {
             quota: document.getElementById("quota").value.trim(),
             counts: document.getElementById("counts").value.trim(),
             cpi: document.getElementById("cpi").value.trim(),
-            securityTerminate: document.getElementById("securityTerminate").checked,
+            securityTerminateFlag: document.getElementById("securityTerminate").checked,
             countryLinks: countryLinks
         };
 
